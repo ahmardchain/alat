@@ -8,6 +8,7 @@
     "build": "hardhat build",
     "test": "hardhat test",
     "window": "tsx --env-file=.env scripts/window.ts",
+    "ops": "tsx scripts/ops.ts",
     "deploy:testnet": "hardhat ignition deploy ignition/modules/Counter.ts --network qorechainTestnet",
     "typecheck": "tsc --noEmit"
   },

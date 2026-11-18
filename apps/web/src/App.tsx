@@ -1,86 +1,47 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import {
-  QORECHAIN_REST_ENDPOINTS,
-  classifyEvmWindowRejection,
-  qorechainTestnet,
-  evmWindowStatus,
-  type EvmWindowRejection,
-} from "@qorechain/evm";
-import { useQuery } from "@tanstack/react-query";
-import { formatEther } from "viem";
-import { useAccount, useBalance, useBlockNumber, useSendTransaction } from "wagmi";
+import { Mark } from "./Logo.js";
+import { Wallet } from "./pages/Wallet.js";
 
-const REMEDY: Record<EvmWindowRejection, string> = {
-  "no-pqc-key": "This account has no registered ML-DSA-87 key. Register one on the native lane first.",
-  "no-window": "No EVM authorisation window is open. Open one on the native lane, then retry.",
-  exhausted: "The window has run out of blocks, transactions or value. Open a new one.",
-  invalid: "The chain refused the window parameters.",
-};
-
-/**
- * The REST API of each chain, through the dev server's proxy (vite.config.ts):
- * the public REST endpoints send no CORS headers. Same chains as
- * QORECHAIN_REST_ENDPOINTS.
- */
-const REST_PROXY: Record<number, string | undefined> = Object.fromEntries(
-  Object.keys(QORECHAIN_REST_ENDPOINTS).map((id) => [
-    Number(id),
-    Number(id) === qorechainTestnet.id ? "/lcd-testnet" : "/lcd-mainnet",
-  ]),
-);
-
-/** The account's EVM authorisation window, read over the native-lane REST API. */
-function WindowStatus({ address, chainId }: { address: `0x${string}`; chainId: number }) {
-  const rest = REST_PROXY[chainId];
-  const { data, error, isLoading } = useQuery({
-    queryKey: ["evm-window", chainId, address],
-    queryFn: () => evmWindowStatus({ rest: rest!, address }),
-    enabled: rest !== undefined,
-    refetchInterval: 10_000,
-  });
-  if (!rest) return <p>Unknown network.</p>;
-  if (isLoading) return <p>Reading the EVM window...</p>;
-  if (error) return <p>Could not read the window: {error.message}</p>;
-  if (!data?.found) {
-    return <p>EVM window: none. Sending from this account is refused until one is opened.</p>;
-  }
+function Home() {
   return (
-    <p>
-      EVM window: {data.live ? "live" : "not usable"} ({data.remainingBlocks.toString()} blocks,{" "}
-      {data.remainingTxs.toString()} transactions, {data.remainingValue.toString()} uqor left)
-    </p>
+    <>
+      <h1>
+        A hacked account can copy your words. <br />
+        It can't copy your key.
+      </h1>
+      <p className="lede">
+        Alat lets friends check a money request with the sender's QoreChain key, not their chat account. Telegram
+        first.
+      </p>
+      <div className="row">
+        <a className="button" href="/wallet">
+          Check your wallet
+        </a>
+      </div>
+      <p className="muted small" style={{ marginTop: 32 }}>
+        Being built for Build Before Q-Day. Linking, checks and answers are not live yet; see the GitHub repository.
+      </p>
+    </>
   );
 }
 
+const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet };
+
 export function App() {
-  const { address, chainId, isConnected } = useAccount();
-  const { data: balance } = useBalance({ address });
-  const { data: block } = useBlockNumber({ watch: true });
-  const send = useSendTransaction();
-  const rejection = send.error ? classifyEvmWindowRejection(send.error) : undefined;
-
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const Page = ROUTES[path];
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", maxWidth: 720, margin: "2rem auto", padding: "0 1rem" }}>
-      <h1>QoreChain EVM dApp</h1>
-      <ConnectButton />
-      <p>Latest block: {block?.toString() ?? "..."}</p>
-
-      {isConnected && address && chainId ? (
-        <section>
-          <p>
-            Account <code>{address}</code> on chain {chainId}
-          </p>
-          <p>Balance: {balance ? `${formatEther(balance.value)} QOR` : "..."}</p>
-          <WindowStatus address={address} chainId={chainId} />
-          <button type="button" disabled={send.isPending} onClick={() => send.sendTransaction({ to: address, value: 0n })}>
-            Send 0 QOR to yourself
-          </button>
-          {send.data && <p>Sent: {send.data}</p>}
-          {send.error && <p>Refused: {rejection ? REMEDY[rejection] : send.error.message}</p>}
-        </section>
-      ) : (
-        <p>Connect a wallet to read your account.</p>
-      )}
-    </main>
+    <div className="wrap">
+      <header className="top">
+        <a className="brand" href="/">
+          <Mark /> alat
+        </a>
+        <nav className="links">
+          <a href="/wallet">Wallet</a>
+          <a href="https://github.com/ahmardchain/alat">GitHub</a>
+        </nav>
+      </header>
+      <main>{Page ? <Page /> : <p>Page not found. <a href="/">Back to Alat</a></p>}</main>
+      <footer>Testnet only (qorechain-diana). No real funds.</footer>
+    </div>
   );
 }
