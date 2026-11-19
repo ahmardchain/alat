@@ -6,11 +6,13 @@
  *   pnpm ops register  register the ML-DSA-87 key of an account (once per account)
  *   pnpm ops hello     send a hybrid-signed (secp256k1 + ML-DSA-87) self-transfer with a memo
  *   pnpm ops fund-demo send 5 QOR from the relayer to the demo owner
+ *   pnpm ops window    open an EVM authorisation window for the relayer
+ *   pnpm ops deploy    deploy AlatRegistry to the testnet EVM (writes deployments/testnet.json)
  *
  * Account selection: ALAT_ACCOUNT=relayer (default) or demo.
  * Secrets live only in the repository-root .env, which is git-ignored.
  */
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { StargateClient } from "@cosmjs/stargate";
 import {
@@ -23,8 +25,12 @@ import {
   isRegisteredPqcKey,
   msg,
   signProofOfPossession,
+  openEvmWindowMsg,
   type UnifiedAccount,
 } from "@qorechain/sdk";
+import { evmWindowCost, evmWindowStatus } from "@qorechain/evm";
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 const ENV_PATH = resolve(import.meta.dirname, "../../.env");
 const net = getNetwork("testnet");
@@ -128,7 +134,7 @@ async function register(): Promise<void> {
 
 async function hello(): Promise<void> {
   const acc = await accountFor(process.env.ALAT_ACCOUNT ?? "relayer");
-  const send = msg.cosmos.send({
+  const send = msg.bank.send({
     fromAddress: acc.cosmos,
     toAddress: acc.cosmos,
     amount: [{ denom: "uqor", amount: "1" }],
@@ -141,7 +147,7 @@ async function hello(): Promise<void> {
 async function fundDemo(): Promise<void> {
   const relayer = await accountFor("relayer");
   const demo = await accountFor("demo");
-  const send = msg.cosmos.send({
+  const send = msg.bank.send({
     fromAddress: relayer.cosmos,
     toAddress: demo.cosmos,
     amount: [{ denom: "uqor", amount: "5000000" }],
@@ -149,8 +155,76 @@ async function fundDemo(): Promise<void> {
   console.log(`funded demo owner: ${await broadcast(relayer, "hybrid", [send], "alat: fund demo owner")}`);
 }
 
+const PQC_KEY_STATUS = "0x0000000000000000000000000000000000000a02";
+const EVM_RPC = net.endpoints.evmRpc ?? "https://evm-testnet.qore.host";
+
+async function openWindow(acc: UnifiedAccount, blocks = 3000n, maxTxs = 10n): Promise<string> {
+  const perTx = evmWindowCost({ gas: 3_000_000n, maxFeePerGas: 250_000_000_000n });
+  const m = openEvmWindowMsg({ sender: acc.cosmos, blocks, maxTxs, maxValue: perTx * maxTxs });
+  const hash = await broadcast(acc, "hybrid", [m], "alat: open EVM window");
+  // Wait until the window is visible to the EVM lane.
+  for (let i = 0; i < 20; i++) {
+    const w = await evmWindowStatus({ rest: REST, address: acc.cosmos });
+    if (w.found && w.live) break;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return hash;
+}
+
+async function window_(): Promise<void> {
+  const acc = await accountFor(process.env.ALAT_ACCOUNT ?? "relayer");
+  console.log(`window opened: ${await openWindow(acc)}`);
+}
+
+async function deploy(): Promise<void> {
+  const acc = await accountFor("relayer");
+  const windowTx = await openWindow(acc, 600n, 2n);
+  console.log(`window opened: ${windowTx}`);
+  const artifact = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, "../artifacts/contracts/AlatRegistry.sol/AlatRegistry.json"), "utf8"),
+  ) as { abi: unknown[]; bytecode: Hex };
+  const account = privateKeyToAccount(acc.privateKey as Hex);
+  const chain = {
+    id: 9800,
+    name: "QoreChain testnet",
+    nativeCurrency: { name: "QOR", symbol: "QOR", decimals: 18 },
+    rpcUrls: { default: { http: [EVM_RPC] } },
+  } as const;
+  const wallet = createWalletClient({ account, chain, transport: http(EVM_RPC) });
+  const pub = createPublicClient({ chain, transport: http(EVM_RPC) });
+  const hash = await wallet.deployContract({
+    abi: artifact.abi,
+    bytecode: artifact.bytecode,
+    args: [acc.evm, PQC_KEY_STATUS],
+  });
+  const receipt = await pub.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success" || !receipt.contractAddress) throw new Error(`deploy failed: ${hash}`);
+  const out = {
+    network: "qorechain-diana",
+    evmChainId: 9800,
+    AlatRegistry: receipt.contractAddress,
+    deployTx: hash,
+    deployBlock: receipt.blockNumber.toString(),
+    relayer: { evm: acc.evm, native: acc.cosmos },
+    pqcKeyStatus: PQC_KEY_STATUS,
+    windowTx,
+    deployedAt: new Date().toISOString(),
+  };
+  mkdirSync(resolve(import.meta.dirname, "../deployments"), { recursive: true });
+  writeFileSync(resolve(import.meta.dirname, "../deployments/testnet.json"), JSON.stringify(out, null, 2) + "\n");
+  console.log(out);
+}
+
 loadEnv();
-const commands: Record<string, () => Promise<void>> = { keys, status, register, hello, "fund-demo": fundDemo };
+const commands: Record<string, () => Promise<void>> = {
+  keys,
+  status,
+  register,
+  hello,
+  "fund-demo": fundDemo,
+  window: window_,
+  deploy,
+};
 const cmd = process.argv[2] ?? "status";
 const run = commands[cmd];
 if (!run) {

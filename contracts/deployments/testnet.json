@@ -1,0 +1,14 @@
+{
+  "network": "qorechain-diana",
+  "evmChainId": 9800,
+  "AlatRegistry": "0x431da38e11e27ba0e74ba06a4fbce7b86d1570ec",
+  "deployTx": "0xc7343c04655ec79bb98c395a0263d2192a8d9b366492c30ef2a0aad25d154473",
+  "deployBlock": "10387468",
+  "relayer": {
+    "evm": "0xdb6B54Ca1F69c721194355EE4071Ca77dbbd3faa",
+    "native": "qor1md44fjsld8rjzx2r2hhyquw2wldm60a2dqlalk"
+  },
+  "pqcKeyStatus": "0x0000000000000000000000000000000000000a02",
+  "windowTx": "2787CFC0FE04D9B9044563DC1E834F734E2B9A738D56F83C1CB40A0BD26FC798",
+  "deployedAt": "2026-11-19T18:28:28.803Z"
+}
