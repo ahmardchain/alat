@@ -137,3 +137,25 @@ only the relayer writes the contract, so the split is:
   makes the server sign the answer transaction with that account. It is a real
   hybrid-signed testnet transaction, verified the same way as any other answer.
   The page says plainly that the server holds this one demo key.
+
+## F7. Telegram can't look up a user by @username
+
+- **Assumed:** `/check @username` works for any account.
+- **True:** the Bot API has no call that turns an arbitrary `@username` into a
+  user id. A bot learns ids only from updates it receives.
+- **Alat does:** it remembers the id and username of everyone who writes to the
+  bot (every linked owner has, through `/link`), and updates the username on
+  every message, because usernames can change and the id is what is linked.
+  `/check @name` for an account the bot has never seen answers "hasn't set up
+  Alat. Call them." Forwarding the suspicious message is the stronger path:
+  Telegram includes the sender's id unless they hide forwards, and the check
+  then uses that id, not the display name.
+
+## F8. Testing with the QoreX wallet mock
+
+- The mock runs inside the page, so its calls to the public REST API hit the
+  API's missing CORS headers (the real QoreX extension calls from its own
+  context). The live e2e tests add the headers with a Playwright route
+  (`apps/web/e2e/cors.ts`). The app itself never calls that API from the browser.
+- The mock derives the owner at `m/44'/118'/0'/0/0`, like QoreX, and registers
+  the ML-DSA-87 key on the first send, like QoreX.
