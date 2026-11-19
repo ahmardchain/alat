@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createQorexMock } from "@qorechain/qorex-wallet-mock";
+import { allowQoreRestFromPage } from "./cors.ts";
 
 // The mock injects the same window.qorex objects QoreX injects and signs for real
 // (hybrid secp256k1 + ML-DSA-87). Its default mnemonic is the public test phrase.
@@ -21,6 +22,7 @@ test("signs and broadcasts a hybrid transaction", async ({ page }) => {
   const mnemonic = process.env.ALAT_E2E_MNEMONIC;
   test.skip(!mnemonic, "set ALAT_E2E_MNEMONIC to a funded testnet mnemonic");
   const mock = createQorexMock({ profile: "current", mnemonic });
+  await allowQoreRestFromPage(page);
   await page.addInitScript({ content: mock.initScript() });
   await page.goto("/wallet");
   await page.getByRole("button", { name: "Connect QoreX" }).click();

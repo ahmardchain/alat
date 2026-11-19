@@ -1,18 +1,11 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// The public REST APIs send no CORS headers, so the browser reaches them
-// through the dev (and preview) server: /lcd-testnet and /lcd-mainnet are
-// forwarded to each network's REST endpoint (see REST_PROXY in src/App.tsx).
-// In production, serve the app behind a proxy that does the same.
-const rest = (target: string) => ({
-  target,
-  changeOrigin: true,
-  rewrite: (p: string) => p.replace(/^\/lcd-(testnet|mainnet)/, ""),
-});
+// In development the Alat server (apps/server, port 8787) answers /api and
+// /lcd-testnet; in production it serves this build itself.
 const proxy = {
-  "/lcd-testnet": rest("https://api-testnet.qore.host"),
-  "/lcd-mainnet": rest("https://api.qore.host"),
+  "/api": "http://localhost:8787",
+  "/lcd-testnet": "http://localhost:8787",
 };
 
 export default defineConfig({

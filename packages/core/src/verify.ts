@@ -83,13 +83,13 @@ export function verifyAnswer(args: {
   if (!memo || memo.kind !== "answer") return refuse("not-alat-memo");
   // A signature made for another check (older or newer) never answers this one.
   if (memo.nonce !== challenge.nonce) return refuse("wrong-challenge");
+  // Block time decides, not when Alat happened to hear about it.
+  if (tx.timeMs > challenge.expiresAtMs) return refuse("expired");
   if (challenge.status !== "pending") return refuse("challenge-closed");
   // The key must be the one linked to the account this check is about.
   if (!linkedOwner) return refuse("wrong-account");
   if (tx.signer !== linkedOwner) return refuse("wrong-signer");
   if (tx.timeMs + SKEW_MS < challenge.createdAtMs) return refuse("before-challenge");
-  // Block time decides, not when Alat happened to hear about it.
-  if (tx.timeMs > challenge.expiresAtMs) return refuse("expired");
   return { ok: true, value: memo.answer };
 }
 

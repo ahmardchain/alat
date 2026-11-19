@@ -6,7 +6,8 @@
   "description": "Alat's shared rules: account hashing, memo formats, challenge lifecycle and the checks every owner transaction must pass.",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./copy": "./src/copy.ts"
   },
   "scripts": {
     "test": "node --import tsx --test test/*.test.ts",

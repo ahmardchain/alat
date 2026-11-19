@@ -1,4 +1,7 @@
 import { Mark } from "./Logo.js";
+import { Check } from "./pages/Check.js";
+import { Link } from "./pages/Link.js";
+import { Respond } from "./pages/Respond.js";
 import { Wallet } from "./pages/Wallet.js";
 
 function Home() {
@@ -13,22 +16,26 @@ function Home() {
         first.
       </p>
       <div className="row">
-        <a className="button" href="/wallet">
+        <a className="button" href="/respond">
+          Answer a check
+        </a>
+        <a className="button secondary" href="/wallet">
           Check your wallet
         </a>
       </div>
       <p className="muted small" style={{ marginTop: 32 }}>
-        Being built for Build Before Q-Day. Linking, checks and answers are not live yet; see the GitHub repository.
+        Being built for Build Before Q-Day. Testnet only.
       </p>
     </>
   );
 }
 
-const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet };
+const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond };
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  const Page = ROUTES[path];
+  const checkId = /^\/c\/([a-z0-9]{12})$/.exec(path)?.[1];
+  const Page = checkId ? () => <Check id={checkId} /> : ROUTES[path];
   return (
     <div className="wrap">
       <header className="top">
@@ -36,6 +43,7 @@ export function App() {
           <Mark /> alat
         </a>
         <nav className="links">
+          <a href="/respond">Respond</a>
           <a href="/wallet">Wallet</a>
           <a href="https://github.com/ahmardchain/alat">GitHub</a>
         </nav>
