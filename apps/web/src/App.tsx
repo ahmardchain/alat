@@ -1,7 +1,9 @@
 import { Mark } from "./Logo.js";
 import { Check } from "./pages/Check.js";
+import { Judge } from "./pages/Judge.js";
 import { Link } from "./pages/Link.js";
 import { Respond } from "./pages/Respond.js";
+import { Status } from "./pages/Status.js";
 import { Wallet } from "./pages/Wallet.js";
 
 function Home() {
@@ -16,11 +18,11 @@ function Home() {
         first.
       </p>
       <div className="row">
-        <a className="button" href="/respond">
-          Answer a check
+        <a className="button" href="/judge">
+          Try it in 3 minutes
         </a>
-        <a className="button secondary" href="/wallet">
-          Check your wallet
+        <a className="button secondary" href="/respond">
+          Answer a check
         </a>
       </div>
       <p className="muted small" style={{ marginTop: 32 }}>
@@ -30,7 +32,7 @@ function Home() {
   );
 }
 
-const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond };
+const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond, "/judge": Judge, "/status": Status };
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -43,8 +45,9 @@ export function App() {
           <Mark /> alat
         </a>
         <nav className="links">
+          <a href="/judge">Judges</a>
           <a href="/respond">Respond</a>
-          <a href="/wallet">Wallet</a>
+          <a href="/status">Status</a>
           <a href="https://github.com/ahmardchain/alat">GitHub</a>
         </nav>
       </header>

@@ -10,7 +10,15 @@
 import { StargateClient } from "@cosmjs/stargate";
 import { bytes32ToTxHash, evmToQor, qorToEvm, txHashToBytes32, type Hex32 } from "@alat/core";
 import { evmWindowCost, evmWindowStatus } from "@qorechain/evm";
-import { EthNativeSigner, deriveUnifiedAccount, msg, openEvmWindowMsg, type UnifiedAccount } from "@qorechain/sdk";
+import {
+  EthNativeSigner,
+  buildRegisterPqcKeyMsg,
+  deriveUnifiedAccount,
+  msg,
+  openEvmWindowMsg,
+  signProofOfPossession,
+  type UnifiedAccount,
+} from "@qorechain/sdk";
 import { createPublicClient, createWalletClient, http, parseAbi, zeroAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Config } from "./config.ts";
@@ -56,6 +64,8 @@ export class Chain {
   private relayerAccount?: UnifiedAccount;
   private demoAccount?: UnifiedAccount;
   private queue: Promise<unknown> = Promise.resolve();
+  /** Called for every transaction Alat sends, so /judge can count them. */
+  onTx: (kind: string, nativeTx: string | null, evmTx: string | null) => void = () => undefined;
   private readonly evmChain;
 
   constructor(private readonly cfg: Config) {
@@ -133,9 +143,26 @@ export class Chain {
     return { accountNumber: BigInt(acc.account_number ?? "0"), sequence: BigInt(acc.sequence ?? "0") };
   }
 
-  private async nativeBroadcast(acc: UnifiedAccount, messages: Parameters<EthNativeSigner["sign"]>[0]["messages"], memo: string) {
+  /** Register an account's ML-DSA-87 key once (the one transaction the chain accepts signed classically). */
+  ensurePqcRegistered(acc: UnifiedAccount): Promise<string | undefined> {
+    return this.serial(async () => {
+      if (await this.pqcKeyRegistered(acc.cosmos)) return undefined;
+      const pop = signProofOfPossession({ chainId: this.cfg.chainId, account: acc.cosmos, keypair: acc.pqc });
+      const m = buildRegisterPqcKeyMsg(acc.cosmos, { pqcKeypair: acc.pqc, proofOfPossession: pop });
+      const hash = await this.nativeBroadcast(acc, [m], "alat: register ML-DSA-87 key", "classical");
+      for (let i = 0; i < 20 && !(await this.pqcKeyRegistered(acc.cosmos)); i++) await new Promise((r) => setTimeout(r, 1500));
+      return hash;
+    });
+  }
+
+  private async nativeBroadcast(
+    acc: UnifiedAccount,
+    messages: Parameters<EthNativeSigner["sign"]>[0]["messages"],
+    memo: string,
+    signMode: "hybrid" | "classical" = "hybrid",
+  ) {
     const { accountNumber, sequence } = await this.sequence(acc.cosmos);
-    const signer = new EthNativeSigner(acc, { signMode: "hybrid", rest: this.cfg.rest });
+    const signer = new EthNativeSigner(acc, { signMode, rest: this.cfg.rest });
     const transport = await StargateClient.connect(this.cfg.rpc);
     try {
       const res = await signer.signAndBroadcast(transport, {
@@ -147,6 +174,7 @@ export class Chain {
         memo,
       });
       if (res.code !== 0) throw new Error(`native tx ${res.transactionHash} failed: code ${res.code} ${res.rawLog ?? ""}`);
+      this.onTx(memo.startsWith("alat1:") ? memo.split(":")[1]! : memo.replace(/^alat: /, ""), res.transactionHash, null);
       return res.transactionHash;
     } finally {
       transport.disconnect();
@@ -204,6 +232,7 @@ export class Chain {
       const evmTx = await wallet.writeContract(request);
       const receipt = await this.pub.waitForTransactionReceipt({ hash: evmTx });
       if (receipt.status !== "success") throw new Error(`registry ${fn} reverted: ${evmTx}`);
+      this.onTx(`registry ${fn}`, null, evmTx);
       return { evmTx, windowTx };
     });
   }

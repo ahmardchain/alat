@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { Hono } from "hono";
 import { isQorAddress } from "@alat/core";
+import { SCENARIOS, type Demo } from "./demo.ts";
 import { AlatError, type Alat } from "./service.ts";
 
 const TX = /^(0x)?[0-9a-fA-F]{64}$/;
@@ -18,7 +19,7 @@ const MIME: Record<string, string> = {
 /** Read-only REST paths the site may reach through /lcd-testnet (the public API sends no CORS headers). */
 const LCD_ALLOWED = [/^\/cosmos\/bank\/v1beta1\/balances\//, /^\/qorechain\/pqc\/v1\/account\//, /^\/cosmos\/tx\/v1beta1\/txs\/[0-9A-Fa-f]{64}$/];
 
-export function createApp(alat: Alat, opts: { rest: string; webDist: string; info: Record<string, unknown>; stats: () => Promise<unknown> }) {
+export function createApp(alat: Alat, demo: Demo, opts: { rest: string; webDist: string; info: Record<string, unknown>; stats: () => Promise<unknown> }) {
   const app = new Hono();
 
   app.onError((err, c) => {
@@ -52,6 +53,21 @@ export function createApp(alat: Alat, opts: { rest: string; webDist: string; inf
   });
   app.post("/api/answer", async (c) => c.json(await alat.submitAnswer(await txBody(c))));
   app.post("/api/cancel", async (c) => c.json(await alat.submitCancel(await txBody(c))));
+
+  // The judge demo. Answers are real hybrid-signed testnet transactions by the demo key.
+  app.get("/api/demo", (c) => c.json({ scenarios: SCENARIOS, account: demo.account }));
+  app.post("/api/demo/check", async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { scenario?: string };
+    if (b.scenario !== "hacker" && b.scenario !== "real") throw new AlatError("bad-request", "scenario must be hacker or real");
+    const r = await demo.start(b.scenario);
+    return c.json(r.notLinked ? { notLinked: true } : { id: r.check.id, view: r.view });
+  });
+  app.post("/api/demo/:id/answer", async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { answer?: string };
+    if (b.answer !== "yes" && b.answer !== "no") throw new AlatError("bad-request", "answer must be yes or no");
+    return c.json(await demo.answer(c.req.param("id"), b.answer));
+  });
+  app.post("/api/demo/:id/forge", async (c) => c.json(await demo.forge(c.req.param("id"))));
 
   app.get("/lcd-testnet/*", async (c) => {
     const url = new URL(c.req.url);

@@ -58,6 +58,8 @@ export class Db {
         answer_tx TEXT, answered_at INTEGER, friend_chat_id TEXT, friend_message_id INTEGER, demo INTEGER NOT NULL DEFAULT 0);
       CREATE INDEX IF NOT EXISTS checks_account ON checks(account, status);
       CREATE TABLE IF NOT EXISTS used_txs (hash TEXT PRIMARY KEY, purpose TEXT NOT NULL, at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS refusals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, reason TEXT NOT NULL, tx TEXT, purpose TEXT NOT NULL, demo INTEGER NOT NULL DEFAULT 0, at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS chain_writes (
         id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, account TEXT, native_tx TEXT, evm_tx TEXT, at INTEGER NOT NULL);
     `);
@@ -197,16 +199,49 @@ export class Db {
     this.sql.prepare(`INSERT INTO chain_writes(kind, account, native_tx, evm_tx, at) VALUES (?,?,?,?,?)`).run(kind, account, nativeTx, evmTx, Date.now());
   }
 
+  logRefusal(reason: string, tx: string | null, purpose: string, demo: boolean): void {
+    this.sql.prepare(`INSERT INTO refusals(reason, tx, purpose, demo, at) VALUES (?,?,?,?,?)`).run(reason, tx, purpose, demo ? 1 : 0, Date.now());
+  }
+
+  recentRefusals(limit = 10): { reason: string; tx: string | null; purpose: string; demo: boolean; at: number }[] {
+    return (this.sql.prepare(`SELECT * FROM refusals WHERE tx IS NOT NULL ORDER BY at DESC LIMIT ?`).all(limit) as Record<string, unknown>[]).map((r) => ({
+      reason: String(r.reason),
+      tx: (r.tx as string | null) ?? null,
+      purpose: String(r.purpose),
+      demo: Number(r.demo) === 1,
+      at: Number(r.at),
+    }));
+  }
+
   // --------------------------------------------------------------- stats
 
-  stats(): { checks: number; confirmed: number; denied: number; expired: number; pending: number } {
-    const rows = this.sql.prepare(`SELECT status, COUNT(*) AS n FROM checks WHERE demo = 0 GROUP BY status`).all() as {
-      status: string;
-      n: number;
-    }[];
-    const by = Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
-    const checks = rows.reduce((s, r) => s + Number(r.n), 0);
-    return { checks, confirmed: by.confirmed ?? 0, denied: by.denied ?? 0, expired: by.expired ?? 0, pending: by.pending ?? 0 };
+  /** Live counts for /judge. Demo checks are counted apart from real ones. */
+  stats() {
+    const count = (where: string) =>
+      Object.fromEntries(
+        (this.sql.prepare(`SELECT status, COUNT(*) AS n FROM checks WHERE ${where} GROUP BY status`).all() as { status: string; n: number }[]).map(
+          (r) => [r.status, Number(r.n)],
+        ),
+      ) as Record<string, number>;
+    const shape = (by: Record<string, number>) => ({
+      checks: Object.values(by).reduce((a, b) => a + b, 0),
+      confirmed: by.confirmed ?? 0,
+      denied: by.denied ?? 0,
+      expired: by.expired ?? 0,
+      pending: by.pending ?? 0,
+    });
+    const one = (q: string) => Number((this.sql.prepare(q).get() as { n: number }).n);
+    return {
+      real: shape(count("demo = 0")),
+      demo: shape(count("demo = 1")),
+      refused: one(`SELECT COUNT(*) AS n FROM refusals WHERE tx IS NOT NULL`),
+      // Distinct testnet transactions Alat sent or verified.
+      transactions: one(`SELECT COUNT(*) AS n FROM (
+          SELECT hash AS h FROM used_txs
+          UNION SELECT native_tx FROM chain_writes WHERE native_tx IS NOT NULL
+          UNION SELECT evm_tx FROM chain_writes WHERE evm_tx IS NOT NULL
+          UNION SELECT tx FROM refusals WHERE tx IS NOT NULL)`),
+    };
   }
 }
 

@@ -10,6 +10,7 @@ import { Bot, InlineKeyboard, type Context } from "grammy";
 import { VERDICT, type Hex32 } from "@alat/core";
 import { renderCheck } from "./render.ts";
 import type { CheckRow } from "./db.ts";
+import type { Demo } from "./demo.ts";
 import type { Alat, CheckView, Notifier } from "./service.ts";
 
 const HELP = [
@@ -20,6 +21,8 @@ const HELP = [
   "",
   "<b>Want friends to be able to check you?</b>",
   "Send /link once and connect your QoreX wallet. Your key, not this chat, will answer.",
+  "",
+  "<b>Just looking?</b> Send /demo.",
 ].join("\n");
 
 /** Telegram user ids and usernames that the bot has seen. */
@@ -49,7 +52,7 @@ export class TelegramNotifier implements Notifier {
   }
 }
 
-export function createBot(token: string, alat: Alat, publicUrl: string): Bot {
+export function createBot(token: string, alat: Alat, publicUrl: string, demo?: Demo): Bot {
   const bot = new Bot(token);
 
   // Every update refreshes the username → Telegram id map, so a renamed account
@@ -60,7 +63,24 @@ export function createBot(token: string, alat: Alat, publicUrl: string): Bot {
     await next();
   });
 
-  bot.command(["start", "help"], (ctx) => ctx.reply(HELP, { parse_mode: "HTML" }));
+  // Judges: t.me/<bot>?start=demo, or /demo. Runs a check on the pre-linked demo account;
+  // the demo owner's answer is given on the site, and this message changes in place.
+  async function runDemo(ctx: Context) {
+    if (!demo) return ctx.reply("The demo is not configured on this server.");
+    const r = await demo.start("hacker", String(ctx.chat!.id));
+    if (r.notLinked) return ctx.reply("The demo account is not linked yet. Try again in a minute.");
+    const sent = await ctx.reply(
+      `<i>Demo: you just got this from @alat_demo:</i>\n“${r.check.requestText}”\n\n` + renderCheck(r.view, publicUrl, "@alat_demo"),
+      { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
+    );
+    alat.db.setFriendMessage(r.check.id, String(ctx.chat!.id), sent.message_id);
+    await ctx.reply("Now play the owner. Answer with the demo key, and watch the message above change:", {
+      reply_markup: new InlineKeyboard().url("Answer as the owner", `${publicUrl}/judge?c=${r.check.id}`),
+    });
+  }
+
+  bot.command("demo", runDemo);
+  bot.command(["start", "help"], (ctx) => (ctx.match === "demo" ? runDemo(ctx) : ctx.reply(HELP, { parse_mode: "HTML" })));
 
   bot.command("link", async (ctx) => {
     if (ctx.chat.type !== "private") return ctx.reply("Send /link to me in a private chat.");

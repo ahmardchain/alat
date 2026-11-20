@@ -90,6 +90,12 @@ export class Alat {
     this.now = opts.now ?? Date.now;
   }
 
+  /** Record a refused transaction (shown on /judge) and return the error to throw. */
+  private refused(reason: Refusal, tx: string, purpose: string, demo: boolean): AlatError {
+    this.db.logRefusal(reason, tx, purpose, demo);
+    return new AlatError(reason);
+  }
+
   accountFor(platform: "telegram" | "demo", userId: string | number): Hex32 {
     return accountHash(this.opts.salt, platform, userId);
   }
@@ -160,8 +166,8 @@ export class Alat {
       token: { token: t.token, account: t.account, createdAtMs: t.createdAtMs, expiresAtMs: t.expiresAtMs, usedTx: t.usedTx ?? undefined },
       usedHashes: this.db.usedTxs(),
     });
-    if (!v.ok) throw new AlatError(v.reason);
-    if (!this.db.useTx(tx.hash, "link")) throw new AlatError("already-used");
+    if (!v.ok) throw this.refused(v.reason, tx.hash, "link", t.platform === "demo");
+    if (!this.db.useTx(tx.hash, "link")) throw this.refused("already-used", tx.hash, "link", t.platform === "demo");
 
     let result: { kind: "linked" | "already-linked" | "change-pending"; evmTx?: string; unlockAtMs?: number };
     try {
@@ -296,8 +302,8 @@ export class Alat {
     if (!c) throw new AlatError("wrong-challenge");
     const link = await this.chain.linkOf(c.account);
     const v = verifyAnswer({ tx, challenge: c, linkedOwner: link?.owner, usedHashes: this.db.usedTxs() });
-    if (!v.ok) throw new AlatError(v.reason);
-    if (!this.db.useTx(tx.hash, "answer")) throw new AlatError("already-used");
+    if (!v.ok) throw this.refused(v.reason, tx.hash, "answer", c.demo);
+    if (!this.db.useTx(tx.hash, "answer")) throw this.refused("already-used", tx.hash, "answer", c.demo);
     const status = v.value === "yes" ? "confirmed" : "denied";
     if (!this.db.closeCheck(c.id, status, tx.hash, this.now())) throw new AlatError("challenge-closed");
     const closed = this.db.check(c.id)!;
@@ -319,8 +325,8 @@ export class Alat {
       changeRequestedAtMs: pending.requestedAtMs,
       usedHashes: this.db.usedTxs(),
     });
-    if (!v.ok) throw new AlatError(v.reason);
-    if (!this.db.useTx(tx.hash, "cancel")) throw new AlatError("already-used");
+    if (!v.ok) throw this.refused(v.reason, tx.hash, "cancel", false);
+    if (!this.db.useTx(tx.hash, "cancel")) throw this.refused("already-used", tx.hash, "cancel", false);
     let w: { evmTx: string };
     try {
       w = await this.chain.cancelChange(memo.account, tx.hash);

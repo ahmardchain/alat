@@ -2,6 +2,7 @@ import { observeTx, type Hex32 } from "@alat/core";
 import { Chain } from "./chain.ts";
 import { loadConfig } from "./config.ts";
 import { Db } from "./db.ts";
+import { Demo } from "./demo.ts";
 import { Alat, type ChainPort, type Notifier } from "./service.ts";
 
 /** Build Alat from the environment. The notifier can be swapped once the bot is up. */
@@ -33,5 +34,19 @@ export async function wire() {
     { checkChanged: (c, v) => holder.notifier.checkChanged(c, v), toOwner: (a, b, u) => holder.notifier.toOwner(a, b, u) },
     { salt: cfg.salt, publicUrl: cfg.publicUrl },
   );
-  return { cfg, db, chain, alat, holder };
+  chain.onTx = (kind, nativeTx, evmTx) => db.logChainWrite(kind, null, nativeTx, evmTx);
+  const demo = new Demo(alat, {
+    async sign(who, memo) {
+      const acc = who === "demo" ? await chain.demoOwner() : await chain.relayer();
+      if (!acc) throw new Error("ALAT_DEMO_OWNER_MNEMONIC is not set");
+      await chain.ensurePqcRegistered(acc);
+      return chain.selfMemo(acc, memo);
+    },
+    async demoAddress() {
+      const acc = await chain.demoOwner();
+      if (!acc) throw new Error("ALAT_DEMO_OWNER_MNEMONIC is not set");
+      return acc.cosmos;
+    },
+  });
+  return { cfg, db, chain, alat, holder, demo };
 }
