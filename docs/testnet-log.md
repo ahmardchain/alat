@@ -43,3 +43,17 @@ self-send whose memo carries the action.
 | "Yes, that's me" | `5D04BE1D72DFF92F856CA45D219344FA82F8A69C53636DE481DD55D23FCA59C3` (owner) | ✅ confirmed |
 | Hacker re-link from Telegram alone | `F9E471C983F523364E1893EB37E2EBE94095D97A99A9FA97E61F07A948386D79` (relayer as hacker) | registry `requestChange`, EVM `0xf760567142b6d765efa0e0879dd77fef508de98fd401de492aa27cbfe1383628`, unlocks 26 Nov |
 | Owner cancels it | `24D5AC9AF5E8DB01253151609D80BEC88D84E275ECC8BD51571336EE11849529` (owner) | registry `cancelChange` |
+
+## Day 4 (20 Nov 2026): judge demo account
+
+The demo account `@alat_demo` (a `demo:` id, not a Telegram user) is linked to
+the demo owner key through the normal link path.
+
+| Step | Transaction | Result |
+| --- | --- | --- |
+| Demo owner registers its ML-DSA-87 key | `E6ED571BFE175D9AE773F817E1E4A8D9FE9D1DD586E23D55393E615BA76BE8B4` | key registered with proof of possession |
+| Demo link (hybrid self-send with the link memo) | `D29BD793982ECA6D3CDCB3B98F7DD699574644D28F9697071582194AD618175F` | registry `link`, EVM `0xe3a4084aa9461944ad234cef58cf6b87e8e90d0a47bb42258ad2c6955bafd515` |
+| Relayer opens an EVM window | `A3ADE0AA0D0A3BF8FD9BC0052FEFDBF1AC49206BE1CE4A94EDC6C41CC0A2C8BA` | |
+| /judge: "hacker" key answers yes | `4BC06823D5AB62EBCD1F8EF6B205C3F4B7BE312840895AFBEB0191D6744F41E4` | refused: `wrong-signer` |
+| /judge: owner "not me" | `8EEF3F6297A1DD333404CB25EA8D4BD6214345927A4C82FDF1AABA083E663CA4` | ❌ denied |
+| /judge: owner "yes" | `69F3195C39642410FD679A65D49AA713FDA55187E974D11B0D212A7E52BAC1B9` | ✅ confirmed |
