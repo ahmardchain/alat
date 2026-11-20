@@ -36,12 +36,12 @@ export class TelegramNotifier implements Notifier {
   constructor(
     private readonly bot: Bot,
     private readonly publicUrl: string,
-    private readonly label: (account: Hex32) => string,
+    private readonly label: (account: Hex32) => Promise<string>,
   ) {}
 
   async checkChanged(check: CheckRow, view: CheckView): Promise<void> {
     if (!check.friendChatId || !check.friendMessageId) return;
-    await this.bot.api.editMessageText(check.friendChatId, check.friendMessageId, renderCheck(view, this.publicUrl, this.label(check.account)), {
+    await this.bot.api.editMessageText(check.friendChatId, check.friendMessageId, renderCheck(view, this.publicUrl, await this.label(check.account)), {
       parse_mode: "HTML",
       link_preview_options: { is_disabled: true },
     });
@@ -59,7 +59,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
   // stays findable under its new name (the id, not the name, is what is linked).
   bot.use(async (ctx, next) => {
     const w = who(ctx);
-    if (w) alat.remember("telegram", w.userId, w.username, ctx.chat?.type === "private" ? w.chatId : null);
+    if (w) await alat.remember("telegram", w.userId, w.username, ctx.chat?.type === "private" ? w.chatId : null);
     await next();
   });
 
@@ -73,7 +73,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
       `<i>Demo: you just got this from @alat_demo:</i>\n“${r.check.requestText}”\n\n` + renderCheck(r.view, publicUrl, "@alat_demo"),
       { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
     );
-    alat.db.setFriendMessage(r.check.id, String(ctx.chat!.id), sent.message_id);
+    await alat.db.setFriendMessage(r.check.id, String(ctx.chat!.id), sent.message_id);
     await ctx.reply("Now play the owner. Answer with the demo key, and watch the message above change:", {
       reply_markup: new InlineKeyboard().url("Answer as the owner", `${publicUrl}/judge?c=${r.check.id}`),
     });
@@ -85,7 +85,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
   bot.command("link", async (ctx) => {
     if (ctx.chat.type !== "private") return ctx.reply("Send /link to me in a private chat.");
     const w = who(ctx)!;
-    const t = alat.issueLinkToken({ platform: "telegram", ...w });
+    const t = await alat.issueLinkToken({ platform: "telegram", ...w });
     await ctx.reply(
       "Here is your one-time link. It works for 10 minutes and only for this Telegram account.\n\nOpen it on the device where QoreX is installed.",
       { reply_markup: new InlineKeyboard().url("Link with QoreX", t.url) },
@@ -102,7 +102,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
       parse_mode: "HTML",
       link_preview_options: { is_disabled: true },
     });
-    alat.db.setFriendMessage(r.check.id, String(ctx.chat!.id), sent.message_id);
+    await alat.db.setFriendMessage(r.check.id, String(ctx.chat!.id), sent.message_id);
   }
 
   bot.command("check", async (ctx) => {
@@ -111,7 +111,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
     if (!username || !/^[A-Za-z0-9_]{4,32}$/.test(username)) {
       return ctx.reply("Send /check @username, optionally followed by the message you received.");
     }
-    const known = alat.db.accountByUsername(username);
+    const known = await alat.db.accountByUsername(username);
     if (!known) {
       const k = VERDICT["not-linked"];
       return ctx.reply(`${k.icon} <b>@${username} hasn't set up Alat.</b>\n${k.body}`, { parse_mode: "HTML" });

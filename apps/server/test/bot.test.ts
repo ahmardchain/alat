@@ -9,9 +9,8 @@ import { answerMemo, linkMemo } from "@alat/core";
 import type { Bot } from "grammy";
 import type { Update, UserFromGetMe } from "grammy/types";
 import { createBot, TelegramNotifier } from "../src/bot.ts";
-import { Db } from "../src/db.ts";
 import { Alat } from "../src/service.ts";
-import { FakeChain } from "./fakes.ts";
+import { FakeChain, memDb } from "./fakes.ts";
 
 const SALT = "bot-test-salt-bot-test-salt-bot-test-salt";
 const OWNER = "qor1md44fjsld8rjzx2r2hhyquw2wldm60a2dqlalk";
@@ -49,7 +48,7 @@ beforeEach(async () => {
   nextMessageId = 500;
   const holder = { n: undefined as TelegramNotifier | undefined };
   alat = new Alat(
-    new Db(":memory:"),
+    await memDb(),
     chain,
     { checkChanged: (c, v) => holder.n!.checkChanged(c, v), toOwner: (a, b, u) => holder.n!.toOwner(a, b, u) },
     { salt: SALT, publicUrl: "https://alat.example", now: () => t, observeAttempts: 1, observeDelayMs: 0 },
@@ -62,8 +61,8 @@ beforeEach(async () => {
       method === "sendMessage" ? { message_id: nextMessageId++, date: 0, chat: { id: (payload as { chat_id: number }).chat_id, type: "private" } } : true;
     return { ok: true, result } as never;
   });
-  holder.n = new TelegramNotifier(bot, "https://alat.example", (a) => {
-    const r = alat.db.account(a);
+  holder.n = new TelegramNotifier(bot, "https://alat.example", async (a) => {
+    const r = await alat.db.account(a);
     return r?.username ? `@${r.username}` : "this account";
   });
 });
@@ -111,7 +110,7 @@ describe("bot", () => {
     // The owner was told in their own chat, with the respond link.
     assert.ok(calls.some((c) => c.method === "sendMessage" && c.payload.chat_id === String(ALICE.id) && /checking a message/.test(text(c))));
 
-    const row = alat.db.sql.prepare("SELECT nonce FROM checks").get() as { nonce: string };
+    const row = (await alat.db.q("SELECT nonce FROM checks"))[0] as { nonce: string };
     await alat.submitAnswer(chain.sign(OWNER, answerMemo(row.nonce, "no")));
     const edit = last("editMessageText");
     assert.equal(edit.payload.chat_id, String(FRIEND.id));
@@ -125,7 +124,7 @@ describe("bot", () => {
       message(FRIEND, "please send money", { forward_origin: { type: "user", date: 0, sender_user: ALICE } }),
     );
     assert.match(text(last("sendMessage")), /⏳/);
-    const row = alat.db.sql.prepare("SELECT account, request_text FROM checks").get() as { account: string; request_text: string };
+    const row = (await alat.db.q("SELECT account, request_text FROM checks"))[0] as { account: string; request_text: string };
     assert.equal(row.account, alat.accountFor("telegram", ALICE.id));
     assert.equal(row.request_text, "please send money");
   });

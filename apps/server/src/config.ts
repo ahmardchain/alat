@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+// Inlined at build time, so the deployed function needs no file access.
+import deploymentJson from "../../../contracts/deployments/testnet.json" with { type: "json" };
 
-const deployment = JSON.parse(
-  readFileSync(resolve(import.meta.dirname, "../../../contracts/deployments/testnet.json"), "utf8"),
-) as { AlatRegistry: `0x${string}`; deployTx: string; deployBlock: string; relayer: { evm: string; native: string } };
+const deployment = deploymentJson as { AlatRegistry: `0x${string}`; deployTx: string };
 
 function need(name: string): string {
   const v = process.env[name]?.trim();
@@ -14,7 +13,8 @@ function need(name: string): string {
 export interface Config {
   port: number;
   publicUrl: string;
-  dbPath: string;
+  databaseUrl: string | undefined;
+  localDbDir: string | undefined;
   salt: string;
   relayerMnemonic: string;
   demoOwnerMnemonic: string | undefined;
@@ -34,7 +34,9 @@ export function loadConfig(): Config {
   return {
     port: Number(process.env.PORT ?? 8787),
     publicUrl: (process.env.ALAT_PUBLIC_URL ?? "http://localhost:8787").replace(/\/$/, ""),
-    dbPath: process.env.ALAT_DB_PATH ?? resolve(import.meta.dirname, "../../../data/alat.db"),
+    // Vercel + Neon sets DATABASE_URL (or POSTGRES_URL). Without it: PGlite in a local folder.
+    databaseUrl: process.env.DATABASE_URL?.trim() || process.env.POSTGRES_URL?.trim() || undefined,
+    localDbDir: process.env.ALAT_LOCAL_DB_DIR ?? resolve(import.meta.dirname ?? ".", "../../../data/pglite"),
     salt: need("ALAT_ID_SALT"),
     relayerMnemonic: need("ALAT_RELAYER_MNEMONIC"),
     demoOwnerMnemonic: process.env.ALAT_DEMO_OWNER_MNEMONIC?.trim() || undefined,
@@ -47,6 +49,6 @@ export function loadConfig(): Config {
     chainId: "qorechain-diana",
     registry: deployment.AlatRegistry,
     registryDeployTx: deployment.deployTx,
-    webDist: process.env.ALAT_WEB_DIST ?? resolve(import.meta.dirname, "../../web/dist"),
+    webDist: process.env.ALAT_WEB_DIST ?? resolve(import.meta.dirname ?? ".", "../../web/dist"),
   };
 }

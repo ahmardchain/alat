@@ -12,7 +12,7 @@ import { wire } from "./wire.ts";
 const { alat, chain } = await wire();
 const [cmd, id, ...rest] = process.argv.slice(2);
 if (cmd === "link-token" && id) {
-  const t = alat.issueLinkToken({ platform: "telegram", userId: id, username: rest[0] ?? null, chatId: null });
+  const t = await alat.issueLinkToken({ platform: "telegram", userId: id, username: rest[0] ?? null, chatId: null });
   console.log(JSON.stringify(t));
 } else if (cmd === "check" && id) {
   const r = await alat.startCheck({ account: alat.accountFor("telegram", id), friendChatId: null, requestText: rest.join(" ") || undefined });

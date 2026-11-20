@@ -43,10 +43,10 @@ export class Demo {
   async setup(): Promise<{ state: "already-linked" | "linked"; nativeTx?: string }> {
     const link = await this.alat.chain.linkOf(this.account);
     const address = await this.signer.demoAddress();
-    this.alat.remember("demo", DEMO_USER, DEMO_USERNAME, null);
+    await this.alat.remember("demo", DEMO_USER, DEMO_USERNAME, null);
     if (link?.owner === address) return { state: "already-linked" };
     if (link) throw new Error(`the demo account is linked to ${link.owner}, not the demo key ${address}`);
-    const t = this.alat.issueLinkToken({ platform: "demo", userId: DEMO_USER, username: DEMO_USERNAME, chatId: null });
+    const t = await this.alat.issueLinkToken({ platform: "demo", userId: DEMO_USER, username: DEMO_USERNAME, chatId: null });
     const info = await this.alat.linkInfo(t.token);
     const hash = await this.signer.sign("demo", info.memo);
     const r = await this.alat.submitLink(t.token, hash);
@@ -54,9 +54,7 @@ export class Demo {
   }
 
   async start(scenario: Scenario, friendChatId: string | null = null) {
-    const pending = Number(
-      (this.alat.db.sql.prepare(`SELECT COUNT(*) AS n FROM checks WHERE demo = 1 AND status = 'pending'`).get() as { n: number }).n,
-    );
+    const pending = await this.alat.db.countPendingDemo();
     if (pending >= MAX_PENDING) throw new AlatError("bad-request", "Several demo checks are already running. Try again in a few minutes.");
     const r = await this.alat.startCheck({
       account: this.account,
@@ -69,15 +67,15 @@ export class Demo {
     return r;
   }
 
-  private demoCheck(id: string) {
-    const c = this.alat.db.check(id);
+  private async demoCheck(id: string) {
+    const c = await this.alat.db.check(id);
     if (!c || !c.demo) throw new AlatError("not-found");
     return c;
   }
 
   /** The demo owner answers with their key. */
   async answer(id: string, answer: Answer) {
-    const c = this.demoCheck(id);
+    const c = await this.demoCheck(id);
     if (c.status !== "pending") throw new AlatError("challenge-closed");
     const hash = await this.signer.sign("demo", answerMemo(c.nonce, answer));
     return this.alat.submitAnswer(hash);
@@ -85,7 +83,7 @@ export class Demo {
 
   /** Another registered key (the "hacker") tries to confirm. Alat must refuse it. */
   async forge(id: string) {
-    const c = this.demoCheck(id);
+    const c = await this.demoCheck(id);
     const hash = await this.signer.sign("other", answerMemo(c.nonce, "yes"));
     try {
       await this.alat.submitAnswer(hash);

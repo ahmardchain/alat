@@ -19,8 +19,43 @@ const MIME: Record<string, string> = {
 /** Read-only REST paths the site may reach through /lcd-testnet (the public API sends no CORS headers). */
 const LCD_ALLOWED = [/^\/cosmos\/bank\/v1beta1\/balances\//, /^\/qorechain\/pqc\/v1\/account\//, /^\/cosmos\/tx\/v1beta1\/txs\/[0-9A-Fa-f]{64}$/];
 
-export function createApp(alat: Alat, demo: Demo, opts: { rest: string; webDist: string; info: Record<string, unknown>; stats: () => Promise<unknown> }) {
+export interface AppOptions {
+  rest: string;
+  /** Serve the built site from here (local Node server). On Vercel the site is static files. */
+  webDist?: string;
+  info: Record<string, unknown>;
+  stats: () => Promise<unknown>;
+  tg?: { path: string; handle: (req: Request) => Promise<Response> };
+}
+
+export function createApp(alat: Alat, demo: Demo, opts: AppOptions) {
   const app = new Hono();
+
+  // Checks expire on every request (cheap), and on /api/cron/expire, which a
+  // scheduled GitHub Action calls every 5 minutes: no long-running timer needed.
+  let lastExpiry = 0;
+  const expire = async () => {
+    if (Date.now() - lastExpiry < 10_000) return 0;
+    lastExpiry = Date.now();
+    return alat.expireDue();
+  };
+  app.use("/api/*", async (_c, next) => {
+    await expire().catch((e) => console.error("expiry:", e));
+    await next();
+  });
+  app.on(["GET", "POST"], "/api/cron/expire", async (c) => {
+    lastExpiry = 0;
+    return c.json({ expired: await expire() });
+  });
+
+  // The demo account links itself on first use (idempotent, through the normal link path).
+  let demoReady: Promise<unknown> | undefined;
+  const ensureDemo = () => (demoReady ??= demo.setup().catch((e) => ((demoReady = undefined), Promise.reject(e))));
+
+  if (opts.tg) {
+    const tg = opts.tg;
+    app.post(`/api/tg/${tg.path}`, (c) => tg.handle(c.req.raw));
+  }
 
   app.onError((err, c) => {
     if (err instanceof AlatError) {
@@ -59,6 +94,7 @@ export function createApp(alat: Alat, demo: Demo, opts: { rest: string; webDist:
   app.post("/api/demo/check", async (c) => {
     const b = (await c.req.json().catch(() => ({}))) as { scenario?: string };
     if (b.scenario !== "hacker" && b.scenario !== "real") throw new AlatError("bad-request", "scenario must be hacker or real");
+    await ensureDemo();
     const r = await demo.start(b.scenario);
     return c.json(r.notLinked ? { notLinked: true } : { id: r.check.id, view: r.view });
   });
@@ -78,15 +114,17 @@ export function createApp(alat: Alat, demo: Demo, opts: { rest: string; webDist:
   });
 
   // The built site, with every unknown path served the SPA's index.html.
+  const webDist = opts.webDist;
+  if (!webDist) return app;
   app.get("*", (c) => {
     const p = normalize(decodeURIComponent(new URL(c.req.url).pathname)).replace(/^(\.\.[/\\])+/, "");
-    const file = join(opts.webDist, p);
-    if (file.startsWith(opts.webDist) && extname(file) && existsSync(file)) {
+    const file = join(webDist, p);
+    if (file.startsWith(webDist) && extname(file) && existsSync(file)) {
       return new Response(readFileSync(file), {
         headers: { "content-type": MIME[extname(file)] ?? "application/octet-stream", "cache-control": "public, max-age=3600" },
       });
     }
-    const index = join(opts.webDist, "index.html");
+    const index = join(webDist, "index.html");
     if (!existsSync(index)) return c.text("The site is not built. Run pnpm --filter @alat/web build.", 503);
     return c.html(readFileSync(index, "utf8"));
   });

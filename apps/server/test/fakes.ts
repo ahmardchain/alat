@@ -2,6 +2,14 @@ import { randomBytes } from "node:crypto";
 import type { Hex32, ObservedTx } from "@alat/core";
 import type { LinkInfo, PendingInfo } from "../src/chain.ts";
 import type { ChainPort, CheckView, Notifier } from "../src/service.ts";
+import { connect, Db } from "../src/db.ts";
+
+/** A fresh in-memory Postgres (PGlite) per test. */
+export async function memDb(): Promise<Db> {
+  const db = new Db(await connect(undefined));
+  await db.init();
+  return db;
+}
 
 export const DAY = 86_400_000;
 

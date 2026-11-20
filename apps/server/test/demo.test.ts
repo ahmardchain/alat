@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 
 import { parseMemo } from "@alat/core";
-import { Db } from "../src/db.ts";
 import { Demo } from "../src/demo.ts";
 import { Alat, AlatError } from "../src/service.ts";
-import { FakeChain, Inbox } from "./fakes.ts";
+import { FakeChain, Inbox, memDb } from "./fakes.ts";
 
 const DEMO_KEY = "qor1psnx8dzwy3trwqg279zzr93l5ksd2ktgnsgp40";
 const OTHER_KEY = "qor1md44fjsld8rjzx2r2hhyquw2wldm60a2dqlalk";
@@ -18,7 +17,7 @@ let alat: Alat;
 beforeEach(async () => {
   t = Date.parse("2026-11-20T12:00:00Z");
   chain = new FakeChain(() => t);
-  alat = new Alat(new Db(":memory:"), chain, new Inbox(), {
+  alat = new Alat(await memDb(), chain, new Inbox(), {
     salt: "demo-test-salt-demo-test-salt-demo-test",
     publicUrl: "https://alat.example",
     now: () => t,
@@ -60,7 +59,7 @@ describe("judge demo", () => {
     const r = await demo.start("real");
     if (r.notLinked) throw new Error("not linked");
     assert.equal((await demo.answer(r.check.id, "yes")).verdict, "confirmed");
-    const s = alat.db.stats();
+    const s = await alat.db.stats();
     assert.equal(s.demo.confirmed, 1);
     assert.equal(s.real.checks, 0);
   });

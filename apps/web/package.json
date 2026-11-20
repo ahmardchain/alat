@@ -1,9 +1,9 @@
 {
-  "name": "web",
+  "name": "@alat/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "A Vite + React + wagmi dApp for the QoreChain EVM, with RainbowKit and the QoreX wallet.",
+  "description": "Alat site: link, respond, judge and status pages, with QoreX on the QoreChain native lane.",
   "scripts": {
     "dev": "vite",
     "e2e": "playwright test --trace off",

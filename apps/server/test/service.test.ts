@@ -8,9 +8,8 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 
 import { answerMemo, cancelMemo, linkMemo, type Hex32 } from "@alat/core";
-import { Db } from "../src/db.ts";
 import { Alat, AlatError } from "../src/service.ts";
-import { DAY, FakeChain, Inbox } from "./fakes.ts";
+import { DAY, FakeChain, Inbox, memDb } from "./fakes.ts";
 
 const SALT = "service-test-salt-service-test-salt-0000";
 const OWNER = "qor1md44fjsld8rjzx2r2hhyquw2wldm60a2dqlalk";
@@ -21,11 +20,11 @@ let chain: FakeChain;
 let inbox: Inbox;
 let alat: Alat;
 
-beforeEach(() => {
+beforeEach(async () => {
   t = Date.parse("2026-11-19T12:00:00Z");
   chain = new FakeChain(() => t);
   inbox = new Inbox();
-  alat = new Alat(new Db(":memory:"), chain, inbox, {
+  alat = new Alat(await memDb(), chain, inbox, {
     salt: SALT,
     publicUrl: "https://alat.example",
     now: () => t,
@@ -35,7 +34,7 @@ beforeEach(() => {
 });
 
 async function linkAs(userId: number, signer: string) {
-  const tok = alat.issueLinkToken({ platform: "telegram", userId, username: `user${userId}`, chatId: String(userId) });
+  const tok = await alat.issueLinkToken({ platform: "telegram", userId, username: `user${userId}`, chatId: String(userId) });
   t += 30_000;
   const hash = chain.sign(signer, linkMemo(tok.account, tok.token));
   return alat.submitLink(tok.token, hash);
@@ -61,7 +60,7 @@ describe("link", () => {
   });
 
   it("refuses a link transaction used twice, or signed after the token expired", async () => {
-    const tok = alat.issueLinkToken({ platform: "telegram", userId: 7, username: null, chatId: null });
+    const tok = await alat.issueLinkToken({ platform: "telegram", userId: 7, username: null, chatId: null });
     const late = chain.sign(OWNER, linkMemo(tok.account, tok.token), t + 11 * 60_000);
     await refusal(alat.submitLink(tok.token, late), "expired");
     const ok = chain.sign(OWNER, linkMemo(tok.account, tok.token));

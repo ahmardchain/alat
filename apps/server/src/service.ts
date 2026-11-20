@@ -91,8 +91,8 @@ export class Alat {
   }
 
   /** Record a refused transaction (shown on /judge) and return the error to throw. */
-  private refused(reason: Refusal, tx: string, purpose: string, demo: boolean): AlatError {
-    this.db.logRefusal(reason, tx, purpose, demo);
+  private async refused(reason: Refusal, tx: string, purpose: string, demo: boolean): Promise<AlatError> {
+    await this.db.logRefusal(reason, tx, purpose, demo);
     return new AlatError(reason);
   }
 
@@ -101,19 +101,19 @@ export class Alat {
   }
 
   /** Remember who is behind an account hash so `/check @username` can find it. */
-  remember(platform: "telegram" | "demo", userId: string | number, username: string | null, chatId: string | null): Hex32 {
+  async remember(platform: "telegram" | "demo", userId: string | number, username: string | null, chatId: string | null): Promise<Hex32> {
     const account = this.accountFor(platform, userId);
-    this.db.rememberAccount({ account, platform, userId: String(userId), username, chatId });
+    await this.db.rememberAccount({ account, platform, userId: String(userId), username, chatId });
     return account;
   }
 
   // ------------------------------------------------------------- link
 
-  issueLinkToken(u: { platform: "telegram" | "demo"; userId: string | number; username: string | null; chatId: string | null }) {
-    const account = this.remember(u.platform, u.userId, u.username, u.chatId);
+  async issueLinkToken(u: { platform: "telegram" | "demo"; userId: string | number; username: string | null; chatId: string | null }) {
+    const account = await this.remember(u.platform, u.userId, u.username, u.chatId);
     const t = this.now();
     const token = randomToken();
-    this.db.insertLinkToken({
+    await this.db.insertLinkToken({
       token,
       account,
       platform: u.platform,
@@ -130,7 +130,7 @@ export class Alat {
 
   async linkInfo(token: string) {
     if (!isToken(token)) throw new AlatError("bad-request");
-    const t = this.db.linkToken(token);
+    const t = await this.db.linkToken(token);
     if (!t) throw new AlatError("not-found");
     const [link, pending] = await Promise.all([this.chain.linkOf(t.account), this.chain.pendingOf(t.account)]);
     return {
@@ -158,16 +158,16 @@ export class Alat {
 
   async submitLink(token: string, txHash: string) {
     if (!isToken(token)) throw new AlatError("bad-request");
-    const t = this.db.linkToken(token);
+    const t = await this.db.linkToken(token);
     if (!t) throw new AlatError("not-found");
     const tx = await this.observe(txHash);
     const v = verifyLink({
       tx,
       token: { token: t.token, account: t.account, createdAtMs: t.createdAtMs, expiresAtMs: t.expiresAtMs, usedTx: t.usedTx ?? undefined },
-      usedHashes: this.db.usedTxs(),
+      usedHashes: await this.db.usedTxs(),
     });
-    if (!v.ok) throw this.refused(v.reason, tx.hash, "link", t.platform === "demo");
-    if (!this.db.useTx(tx.hash, "link")) throw this.refused("already-used", tx.hash, "link", t.platform === "demo");
+    if (!v.ok) throw await this.refused(v.reason, tx.hash, "link", t.platform === "demo");
+    if (!(await this.db.useTx(tx.hash, "link"))) throw await this.refused("already-used", tx.hash, "link", t.platform === "demo");
 
     let result: { kind: "linked" | "already-linked" | "change-pending"; evmTx?: string; unlockAtMs?: number };
     try {
@@ -184,10 +184,10 @@ export class Alat {
         result = { kind: "change-pending", evmTx: w.evmTx, unlockAtMs: p?.unlockAtMs };
       }
     } catch (e) {
-      this.db.releaseTx(tx.hash);
+      await this.db.releaseTx(tx.hash);
       throw e;
     }
-    this.db.markLinkTokenUsed(token, tx.hash, result.kind);
+    await this.db.markLinkTokenUsed(token, tx.hash, result.kind);
     if (t.chatId) {
       const text =
         result.kind === "linked"
@@ -213,8 +213,8 @@ export class Alat {
       friendMessageId: null,
       demo: args.demo ?? false,
     };
-    this.db.insertCheck(row);
-    const owner = this.db.account(args.account);
+    await this.db.insertCheck(row);
+    const owner = await this.db.account(args.account);
     if (owner?.chatId && !row.demo) {
       await this.notifier
         .toOwner(owner.chatId, "Someone is checking a message sent from your account. Answer with your QoreX key, not from this chat.", `${this.opts.publicUrl}/respond`)
@@ -238,7 +238,7 @@ export class Alat {
   }
 
   async checkView(id: string): Promise<CheckView> {
-    const c = this.db.check(id);
+    const c = await this.db.check(id);
     if (!c) throw new AlatError("not-found");
     const [link, pending] = await Promise.all([this.chain.linkOf(c.account), this.chain.pendingOf(c.account)]);
     return this.view(c, link, pending);
@@ -246,24 +246,22 @@ export class Alat {
 
   /** Pending checks for the accounts this address owns (owner read from the registry). */
   async pendingFor(address: string) {
-    const rows = this.db.sql
-      .prepare(`SELECT DISTINCT account FROM checks WHERE status = 'pending' AND expires_at >= ?`)
-      .all(this.now()) as { account: Hex32 }[];
+    const accounts = await this.db.accountsWithPendingChecks(this.now());
     const out: {
       account: Hex32;
       username: string | null;
       checks: { id: string; requestText: string | null; expiresAtMs: number; createdAtMs: number; memoYes: string; memoNo: string }[];
       pending: PendingInfo | null;
     }[] = [];
-    for (const { account } of rows) {
+    for (const account of accounts) {
       const link = await this.chain.linkOf(account);
       if (link?.owner !== address) continue;
       const pending = await this.chain.pendingOf(account);
       out.push({
         account,
-        username: this.db.account(account)?.username ?? null,
+        username: (await this.db.account(account))?.username ?? null,
         pending: pending ?? null,
-        checks: this.db.pendingChecks(account, this.now()).map((c) => ({
+        checks: (await this.db.pendingChecks(account, this.now())).map((c) => ({
           id: c.id,
           requestText: c.requestText,
           expiresAtMs: c.expiresAtMs,
@@ -278,7 +276,7 @@ export class Alat {
 
   /** Accounts known to Alat whose link this address owns, with any pending change. */
   async ownedAccounts(address: string) {
-    const rows = this.db.sql.prepare(`SELECT account, username FROM accounts`).all() as { account: Hex32; username: string | null }[];
+    const rows = await this.db.allAccounts();
     const out: { account: Hex32; username: string | null; link: LinkInfo; pending: PendingInfo | null; cancelMemo: string }[] = [];
     for (const r of rows) {
       const link = await this.chain.linkOf(r.account);
@@ -298,15 +296,15 @@ export class Alat {
     const tx = await this.observe(txHash);
     const memo = parseMemo(tx.memo);
     if (!memo || memo.kind !== "answer") throw new AlatError("not-alat-memo");
-    const c = this.db.checkByNonce(memo.nonce);
+    const c = await this.db.checkByNonce(memo.nonce);
     if (!c) throw new AlatError("wrong-challenge");
     const link = await this.chain.linkOf(c.account);
-    const v = verifyAnswer({ tx, challenge: c, linkedOwner: link?.owner, usedHashes: this.db.usedTxs() });
-    if (!v.ok) throw this.refused(v.reason, tx.hash, "answer", c.demo);
-    if (!this.db.useTx(tx.hash, "answer")) throw this.refused("already-used", tx.hash, "answer", c.demo);
+    const v = verifyAnswer({ tx, challenge: c, linkedOwner: link?.owner, usedHashes: await this.db.usedTxs() });
+    if (!v.ok) throw await this.refused(v.reason, tx.hash, "answer", c.demo);
+    if (!(await this.db.useTx(tx.hash, "answer"))) throw await this.refused("already-used", tx.hash, "answer", c.demo);
     const status = v.value === "yes" ? "confirmed" : "denied";
-    if (!this.db.closeCheck(c.id, status, tx.hash, this.now())) throw new AlatError("challenge-closed");
-    const closed = this.db.check(c.id)!;
+    if (!(await this.db.closeCheck(c.id, status, tx.hash, this.now()))) throw new AlatError("challenge-closed");
+    const closed = (await this.db.check(c.id))!;
     const view = this.view(closed, link, await this.chain.pendingOf(c.account));
     await this.notifier.checkChanged(closed, view).catch(() => undefined);
     return view;
@@ -323,15 +321,15 @@ export class Alat {
       account: memo.account,
       linkedOwner: link?.owner,
       changeRequestedAtMs: pending.requestedAtMs,
-      usedHashes: this.db.usedTxs(),
+      usedHashes: await this.db.usedTxs(),
     });
-    if (!v.ok) throw this.refused(v.reason, tx.hash, "cancel", false);
-    if (!this.db.useTx(tx.hash, "cancel")) throw this.refused("already-used", tx.hash, "cancel", false);
+    if (!v.ok) throw await this.refused(v.reason, tx.hash, "cancel", false);
+    if (!(await this.db.useTx(tx.hash, "cancel"))) throw await this.refused("already-used", tx.hash, "cancel", false);
     let w: { evmTx: string };
     try {
       w = await this.chain.cancelChange(memo.account, tx.hash);
     } catch (e) {
-      this.db.releaseTx(tx.hash);
+      await this.db.releaseTx(tx.hash);
       throw e;
     }
     return { account: memo.account, nativeTx: tx.hash, evmTx: w.evmTx };
@@ -339,10 +337,10 @@ export class Alat {
 
   /** Close checks whose time ran out: they stay ❌. */
   async expireDue(): Promise<number> {
-    const due = this.db.dueChecks(this.now());
+    const due = await this.db.dueChecks(this.now());
     for (const c of due) {
-      if (!this.db.closeCheck(c.id, "expired", null, this.now())) continue;
-      const closed = this.db.check(c.id)!;
+      if (!(await this.db.closeCheck(c.id, "expired", null, this.now()))) continue;
+      const closed = (await this.db.check(c.id))!;
       const [link, pending] = await Promise.all([this.chain.linkOf(c.account), this.chain.pendingOf(c.account)]);
       await this.notifier.checkChanged(closed, this.view(closed, link, pending)).catch(() => undefined);
     }

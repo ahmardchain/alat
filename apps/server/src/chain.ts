@@ -68,6 +68,12 @@ export class Chain {
   onTx: (kind: string, nativeTx: string | null, evmTx: string | null) => void = () => undefined;
   private readonly evmChain;
 
+  /**
+   * Runs relayer work one at a time across every instance (on Vercel, many
+   * functions can run at once and they share the relayer's nonce).
+   */
+  lock: <T>(fn: () => Promise<T>) => Promise<T> = (fn) => fn();
+
   constructor(private readonly cfg: Config) {
     this.evmChain = {
       id: 9800,
@@ -190,7 +196,8 @@ export class Chain {
   // ---------------------------------------------------- relayer writes
 
   private serial<T>(fn: () => Promise<T>): Promise<T> {
-    const run = this.queue.then(fn, fn);
+    const locked = () => this.lock(fn);
+    const run = this.queue.then(locked, locked);
     this.queue = run.catch(() => undefined);
     return run;
   }
