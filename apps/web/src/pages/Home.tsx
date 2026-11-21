@@ -94,10 +94,7 @@ export function Home() {
       </section>
 
       <section style={{ marginTop: 40 }}>
-        <h2>How it works, step by step</h2>
-        <p className="muted small" style={{ marginTop: 0 }}>
-          Four lanes: the chat, Alat, the owner's QoreX wallet, and the QoreChain testnet. Click through each part.
-        </p>
+        <h2>How it works</h2>
         <Workflow />
       </section>
 
