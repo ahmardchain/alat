@@ -10,6 +10,6 @@ jobs:
   expire:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -fsS -X POST "${ALAT_URL:-https://alat.vercel.app}/api/cron/expire"
+      - run: curl -fsS -X POST "${ALAT_URL:-https://alat-silk.vercel.app}/api/cron/expire"
         env:
           ALAT_URL: ${{ vars.ALAT_URL }}

@@ -28,7 +28,7 @@ Production (and Preview if you want previews to work):
 | `ALAT_ID_SALT` | from your `.env` (never change it once accounts are linked) |
 | `ALAT_RELAYER_MNEMONIC` | from your `.env` |
 | `ALAT_DEMO_OWNER_MNEMONIC` | from your `.env` |
-| `ALAT_PUBLIC_URL` | the production URL, e.g. `https://alat.vercel.app` (no trailing slash) |
+| `ALAT_PUBLIC_URL` | the production URL, e.g. `https://alat-silk.vercel.app` (no trailing slash) |
 | `BOT_TOKEN` | from @BotFather |
 | `ALAT_VIDEO_URL` | optional, once the video is public |
 
@@ -45,7 +45,7 @@ Then **Deployments → Redeploy** so the function picks them up.
 
 Checks close after 15 minutes. The Hobby plan runs Vercel cron jobs at most
 once a day, so `.github/workflows/expire.yml` calls `/api/cron/expire` every
-5 minutes. If your URL is not `https://alat.vercel.app`, set the repository
+5 minutes. If your URL is not `https://alat-silk.vercel.app`, set the repository
 variable `ALAT_URL` (GitHub → Settings → Secrets and variables → Actions →
 Variables). Checks also close whenever anyone uses the site or the bot.
 
