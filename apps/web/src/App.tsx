@@ -4,10 +4,11 @@ import { Demo } from "./pages/Demo.js";
 import { Home } from "./pages/Home.js";
 import { Link } from "./pages/Link.js";
 import { Respond } from "./pages/Respond.js";
+import { Start } from "./pages/Start.js";
 import { Status } from "./pages/Status.js";
 import { Wallet } from "./pages/Wallet.js";
 
-const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond, "/demo": Demo, "/status": Status };
+const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond, "/demo": Demo, "/status": Status, "/start": Start };
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -26,9 +27,12 @@ export function App() {
         </a>
         <nav className="links">
           <a href="/demo">Demo</a>
+          <a href="/start">Get started</a>
           <a href="/respond">Respond</a>
           <a href="/status">Status</a>
-          <a href="https://github.com/ahmardchain/alat">GitHub</a>
+          <a href="https://github.com/ahmardchain/alat" className="hide-phone">
+            GitHub
+          </a>
         </nav>
       </header>
       <main>{Page ? <Page /> : <p>Page not found. <a href="/">Back to Alat</a></p>}</main>
