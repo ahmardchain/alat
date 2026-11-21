@@ -20,6 +20,20 @@ export function webhookSecrets(botToken: string) {
   return { path: h.slice(0, 32), header: h.slice(32, 64) };
 }
 
+/** Resolve `p`, or give up after `ms` (the caller decides what giving up means). */
+async function within<T>(p: Promise<T>, ms: number, what: string): Promise<T | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const t0 = Date.now();
+  try {
+    return await Promise.race([p, new Promise<undefined>((r) => { timer = setTimeout(() => r(undefined), ms); })]);
+  } catch (e) {
+    console.error(`${what} failed after ${Date.now() - t0} ms:`, e instanceof Error ? e.message : e);
+    return undefined;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function build(opts: { serveWeb: boolean }) {
   const { cfg, db, chain, alat, holder, demo } = await wire();
   const relayer = await chain.relayer();
@@ -34,8 +48,10 @@ export async function build(opts: { serveWeb: boolean }) {
   if (cfg.botToken) {
     bot = createBot(cfg.botToken, alat, cfg.publicUrl, demo);
     holder.notifier = new TelegramNotifier(bot, cfg.publicUrl, label);
-    await bot.init();
-    botUsername = bot.botInfo.username;
+    // Never let Telegram hold up the site: if it doesn't answer in time, the bot
+    // initialises on its first webhook instead.
+    await within(bot.init(), 8_000, "telegram getMe");
+    if (bot.isInited()) botUsername = bot.botInfo.username;
   }
 
   const info = {
@@ -89,8 +105,11 @@ export async function build(opts: { serveWeb: boolean }) {
   // Point Telegram at this deployment when it isn't already (once per cold start).
   if (tg && opts.serveWeb === false && cfg.publicUrl.startsWith("https://")) {
     const want = `${cfg.publicUrl}/api/tg/${tg.path}`;
-    const current = await bot!.api.getWebhookInfo().catch(() => undefined);
-    if (current && current.url !== want) await tg.setWebhook().catch((e) => console.error("setWebhook:", e));
+    const current = await within(bot!.api.getWebhookInfo(), 8_000, "telegram getWebhookInfo");
+    if (current && current.url !== want) {
+      const set = await within(tg.setWebhook(), 8_000, "telegram setWebhook");
+      console.log(`telegram webhook ${set ? "set" : "NOT set"}: ${want.replace(tg.path, "<secret>")}`);
+    }
   }
   return { app, cfg, alat, demo, bot };
 }
