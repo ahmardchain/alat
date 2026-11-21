@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { IconChat, IconCheck, IconCross, IconForward, IconKey } from "./Icons.js";
 
 /** How it works, in three plain steps that light up one after another. */
 const STEPS = [
-  { icon: "💬", title: "A message asks you for money", body: "It comes from your friend's account. But is it really them?" },
-  { icon: "🔍", title: "Forward it to the Alat bot", body: "One tap in Telegram. Don't pay yet." },
-  { icon: "🔑", title: "Your friend's key answers", body: "Only the real owner has it." },
+  { Icon: IconChat, title: "A message asks you for money", body: "It comes from your friend's account. But is it really them?" },
+  { Icon: IconForward, title: "Forward it to the Alat bot", body: "One tap in Telegram. Don't pay yet." },
+  { Icon: IconKey, title: "Your friend's key answers", body: "Only the real owner has it." },
 ];
 
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -12,7 +13,7 @@ const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.
 export function Workflow() {
   // 0..2 = that step is lit; 3 = the answer is shown. Loops.
   const [at, setAt] = useState(reducedMotion() ? 3 : 0);
-  const [ok, setOk] = useState(false); // alternate ❌ and ✅ on each loop
+  const [ok, setOk] = useState(false); // alternate "not them" and "it's them" on each loop
   useEffect(() => {
     if (reducedMotion()) return;
     const t = setTimeout(
@@ -30,14 +31,15 @@ export function Workflow() {
       <div className="hiw-steps">
         {STEPS.map((s, n) => (
           <div key={s.title} className={`hiw-step ${at >= n ? "on" : ""} ${at === n ? "now" : ""}`}>
-            <span className="hiw-icon" aria-hidden="true">
-              {s.icon}
+            <span className="hiw-icon">
+              <s.Icon size={28} />
             </span>
             <b>{s.title}</b>
             <span className="muted small">{s.body}</span>
             {n === 2 && (
               <span className={`hiw-answer ${at === 3 ? "show" : ""} ${ok ? "go" : "stop"}`}>
-                {ok ? "✅ It's them. Safe to send." : "❌ Not them. Don't pay."}
+                {ok ? <IconCheck size={18} /> : <IconCross size={18} />}
+                {ok ? "It's them. Safe to send." : "Not them. Don't pay."}
               </span>
             )}
           </div>

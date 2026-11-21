@@ -115,7 +115,7 @@ export function Respond() {
 
       {done.map((v) => (
         <p key={v.id} className={`card verdict ${v.verdict === "confirmed" ? "go" : "stop"}`} data-testid="answered">
-          {v.verdict === "confirmed" ? "Sent: ✅ confirmed." : "Sent: ❌ not you. Your friend is told not to send money."}{" "}
+          {v.verdict === "confirmed" ? "Sent: confirmed." : "Sent: not you. Your friend is told not to send money."}{" "}
           {v.answerTx && <Tx hash={v.answerTx} />}
         </p>
       ))}

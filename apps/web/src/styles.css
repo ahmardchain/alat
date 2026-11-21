@@ -163,3 +163,11 @@ h3 { font-size: 18px; margin: 0 0 6px; font-weight: 600; }
   .hiw-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -21px; transform: translateX(-50%); }
 }
 @media (prefers-reduced-motion: reduce) { .hiw-step, .hiw-answer { transition: none; } }
+
+/* ---------- icons ---------- */
+.icon { flex: none; vertical-align: -0.2em; }
+.iconline { display: inline-flex; align-items: center; gap: 8px; }
+.tone-go-ink { color: var(--go); } .tone-stop-ink { color: var(--stop); } .tone-wait-ink { color: var(--wait); }
+.hiw-icon { display: inline-flex; width: 48px; height: 48px; align-items: center; justify-content: center; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); margin-bottom: 6px; }
+.hiw-step.now .hiw-icon { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.hiw-answer { display: inline-flex; align-items: center; gap: 8px; }
