@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Mark } from "../Logo.js";
+import { Workflow } from "../Workflow.js";
 
 interface Stats {
   registry: { linkedAccounts: number; totalWrites: number };
@@ -67,14 +68,18 @@ export function Home() {
             <a className="button" href="/demo">
               Watch it catch a hacker
             </a>
-            {bot && (
-              <a className="button secondary" href={bot}>
-                Open the Telegram bot
-              </a>
-            )}
+            <a className="button secondary" href="/start">
+              Get started
+            </a>
           </div>
           <p className="small muted" style={{ marginTop: 14 }}>
             Two minutes, no wallet needed. Every step is a real transaction on the QoreChain testnet.
+            {bot && (
+              <>
+                {" "}
+                Or open the bot: <a href={bot}>@{bot.replace(/^https:\/\/t\.me\//, "")}</a>.
+              </>
+            )}
           </p>
         </div>
         <ChatIllustration />
@@ -89,31 +94,11 @@ export function Home() {
       </section>
 
       <section style={{ marginTop: 40 }}>
-        <h2>How it works</h2>
-        <div className="steps">
-          <div className="card step">
-            <span className="num mono">1</span>
-            <h3>Link once</h3>
-            <p className="muted small">
-              Send <code>/link</code> to the bot and approve in QoreX. Your Telegram account is bound on chain to your QoreChain key.
-            </p>
-          </div>
-          <div className="card step">
-            <span className="num mono">2</span>
-            <h3>A friend checks</h3>
-            <p className="muted small">
-              They forward the suspicious message to the bot. It answers ⏳ <i>“Do not send money until this turns green.”</i>
-            </p>
-          </div>
-          <div className="card step">
-            <span className="num mono">3</span>
-            <h3>Your key answers</h3>
-            <p className="muted small">
-              On alat, outside the chat app, you sign <b>Yes, that's me</b> or <b>No, that's not me</b>. Their message turns ✅
-              or ❌.
-            </p>
-          </div>
-        </div>
+        <h2>How it works, step by step</h2>
+        <p className="muted small" style={{ marginTop: 0 }}>
+          Four lanes: the chat, Alat, the owner's QoreX wallet, and the QoreChain testnet. Click through each part.
+        </p>
+        <Workflow />
       </section>
 
       <section style={{ marginTop: 40 }} className="two">
