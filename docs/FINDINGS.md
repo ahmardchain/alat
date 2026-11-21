@@ -128,12 +128,12 @@ only the relayer writes the contract, so the split is:
 - Q-Day Drill (18 Nov 2026): registration closed on 17 Nov, before Alat had a
   testnet account. Alat does not take part.
 
-## F6. Judge demo without QoreX
+## F6. A demo without QoreX
 
 - **Assumed:** a judge can watch a check go ❌, then ✅, without installing
   QoreX.
 - **Alat does:** a demo owner account whose key is held by the Alat server is
-  linked to a demo Telegram identity. On `/judge`, "Answer as the demo owner"
+  linked to a demo Telegram identity. On `/demo`, "Answer as the demo owner"
   makes the server sign the answer transaction with that account. It is a real
   hybrid-signed testnet transaction, verified the same way as any other answer.
   The page says plainly that the server holds this one demo key.

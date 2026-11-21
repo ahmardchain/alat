@@ -90,7 +90,7 @@ export class Alat {
     this.now = opts.now ?? Date.now;
   }
 
-  /** Record a refused transaction (shown on /judge) and return the error to throw. */
+  /** Record a refused transaction (shown on /demo) and return the error to throw. */
   private async refused(reason: Refusal, tx: string, purpose: string, demo: boolean): Promise<AlatError> {
     await this.db.logRefusal(reason, tx, purpose, demo);
     return new AlatError(reason);

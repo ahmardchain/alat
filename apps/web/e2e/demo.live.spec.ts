@@ -1,5 +1,5 @@
 /**
- * The /judge demo against a running server on the testnet. No wallet in the
+ * The /demo page against a running server on the testnet. No wallet in the
  * browser: the demo owner's key is held by the server, and every answer is a
  * real hybrid-signed transaction. Opt in with ALAT_LIVE=1.
  */
@@ -9,8 +9,8 @@ test.skip(process.env.ALAT_LIVE !== "1", "set ALAT_LIVE=1");
 test.use({ baseURL: process.env.ALAT_SERVER ?? "http://localhost:8787" });
 test.setTimeout(240_000);
 
-test("judge: hacker message, hacker's key refused, owner says not me (❌), then a real request (✅)", async ({ page }) => {
-  await page.goto("/judge");
+test("demo: hacker message, hacker's key refused, owner says not me (❌), then a real request (✅)", async ({ page }) => {
+  await page.goto("/demo");
   await expect(page.getByTestId("stats")).not.toContainText("…", { timeout: 30_000 });
 
   await page.getByRole("button", { name: "Get the hacker's message" }).click();

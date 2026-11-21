@@ -1,6 +1,6 @@
 import { Mark } from "./Logo.js";
 import { Check } from "./pages/Check.js";
-import { Judge } from "./pages/Judge.js";
+import { Demo } from "./pages/Demo.js";
 import { Link } from "./pages/Link.js";
 import { Respond } from "./pages/Respond.js";
 import { Status } from "./pages/Status.js";
@@ -18,8 +18,8 @@ function Home() {
         first.
       </p>
       <div className="row">
-        <a className="button" href="/judge">
-          Try it in 3 minutes
+        <a className="button" href="/demo">
+          Watch it catch a hacker
         </a>
         <a className="button secondary" href="/respond">
           Answer a check
@@ -32,10 +32,15 @@ function Home() {
   );
 }
 
-const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond, "/judge": Judge, "/status": Status };
+const ROUTES: Record<string, () => JSX.Element> = { "/": Home, "/wallet": Wallet, "/link": Link, "/respond": Respond, "/demo": Demo, "/status": Status };
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  // Old links (the bot, the README before 22 Nov) pointed to /judge.
+  if (path === "/judge") {
+    window.location.replace(`/demo${window.location.search}`);
+    return null;
+  }
   const checkId = /^\/c\/([a-z0-9]{12})$/.exec(path)?.[1];
   const Page = checkId ? () => <Check id={checkId} /> : ROUTES[path];
   return (
@@ -45,7 +50,7 @@ export function App() {
           <Mark /> alat
         </a>
         <nav className="links">
-          <a href="/judge">Judges</a>
+          <a href="/demo">Demo</a>
           <a href="/respond">Respond</a>
           <a href="/status">Status</a>
           <a href="https://github.com/ahmardchain/alat">GitHub</a>

@@ -16,7 +16,7 @@ music under speech. Every on-screen hash is real; nothing is mocked.
 | 1:55 | Sam's bot message changes in place to ❌ *The owner says this is NOT them.* | "Sam's message turns red. The hacker is caught, while still typing." |
 | 2:05 | Maya cancels the pending re-link on /respond. | "And Maya cancels the hacker's re-link with the same key." |
 | 2:15 | A second, real request → Maya presses **Yes** → ✅ in Sam's chat. | "When it really is her, it turns green." |
-| 2:20 | /judge: "What Alat refuses" table and the live proof numbers. | "Alat refuses a different key, a replayed answer, an answer meant for another account, a late answer, and anything without a valid post-quantum signature. Each has a test, and the numbers here are read live from the testnet." |
+| 2:20 | /demo: "What Alat refuses" table and the live proof numbers. | "Alat refuses a different key, a replayed answer, an answer meant for another account, a late answer, and anything without a valid post-quantum signature. Each has a test, and the numbers here are read live from the testnet." |
 | 2:45 | Belief line, URL, "Built for Build Before Q-Day". | "A hacked account can copy your words. It can't copy your key." |
 
 ## Before recording

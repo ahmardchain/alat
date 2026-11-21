@@ -4,7 +4,7 @@
 
 Alat lets a friend check a money request with the sender's QoreChain key, held in QoreX, instead of trusting the chat account a hacker may have taken over.
 
-**Live site:** not deployed yet · **Telegram bot:** not deployed yet · **Judge page:** `/judge` on the live site · **Demo video:** not published yet · **Hybrid-signed tx:** [`D17E9DDC…8162`](https://api-testnet.qore.host/cosmos/tx/v1beta1/txs/D17E9DDC1DAD4D8AEF248B6E1C3EC46C43076DF81A8705BB8D8476CC8B1D8162)
+**Live site:** not deployed yet · **Telegram bot:** not deployed yet · **Demo:** `/demo` on the live site · **Demo video:** not published yet · **Hybrid-signed tx:** [`D17E9DDC…8162`](https://api-testnet.qore.host/cosmos/tx/v1beta1/txs/D17E9DDC1DAD4D8AEF248B6E1C3EC46C43076DF81A8705BB8D8476CC8B1D8162)
 
 ![Alat: a hacked account can copy your words, it can't copy your key](docs/featured.png)
 
@@ -18,7 +18,7 @@ Someone's Telegram gets hacked, and the hacker messages all their friends: *"I'm
 
 | Do this | You'll see |
 | --- | --- |
-| 1. Open `/judge` and press **Get the hacker's message** | A money request from `@alat_demo` and a ⏳ *Waiting for the owner* card |
+| 1. Open `/demo` and press **Get the hacker's message** | A money request from `@alat_demo` and a ⏳ *Waiting for the owner* card |
 | 2. Press **Answer "yes" with the hacker's key** | A real testnet transaction from a different registered key, **refused**: *signed by a different key than the one linked* |
 | 3. Press **No, that's not me** | The card turns ❌ *The owner says this is NOT them*, with the answer transaction |
 | 4. Press **A real request from the owner**, then **Yes, that's me** | ✅ *Confirmed by the real owner* |
@@ -82,7 +82,7 @@ Network `qorechain-diana` (EVM chain id 9800). Explorer: <https://explore.qore.n
 | --- | --- |
 | AlatRegistry | `0x431da38e11e27ba0e74ba06a4fbce7b86d1570ec` |
 | Relayer (only writer of the registry) | `qor1md44fjsld8rjzx2r2hhyquw2wldm60a2dqlalk` / `0xdb6B54Ca1F69c721194355EE4071Ca77dbbd3faa` |
-| Demo owner (`@alat_demo` on /judge, key held by the server) | `qor1psnx8dzwy3trwqg279zzr93l5ksd2ktgnsgp40` / `0x0C2663b44E245637010AF14421963FA5a0D55968` |
+| Demo owner (`@alat_demo` on /demo, key held by the server) | `qor1psnx8dzwy3trwqg279zzr93l5ksd2ktgnsgp40` / `0x0C2663b44E245637010AF14421963FA5a0D55968` |
 | Test owner (QoreX wallet mock in e2e tests) | `qor1zrmp2jdwfq8kdv4u7ug5n7xvqnl8lpnl7s3etz` |
 | PQC Key Status precompile (read by the contract) | `0x0000000000000000000000000000000000000a02` |
 
@@ -100,7 +100,7 @@ pnpm --filter @alat/web build
 pnpm --filter @alat/server dev
 ```
 
-Open <http://localhost:8787/judge>. Tests: `pnpm test` (live chain tests: `pnpm --filter @alat/core test:live`, `pnpm --filter @alat/web e2e:live`).
+Open <http://localhost:8787/demo>. Tests: `pnpm test` (live chain tests: `pnpm --filter @alat/core test:live`, `pnpm --filter @alat/web e2e:live`).
 
 ## Credits
 

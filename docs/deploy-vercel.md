@@ -37,7 +37,7 @@ Then **Deployments → Redeploy** so the function picks them up.
 ## 4. Check it
 
 - `https://<your-url>/api/info` returns the registry address.
-- `https://<your-url>/judge` runs the demo (the first run links `@alat_demo`, about 20 seconds).
+- `https://<your-url>/demo` runs the demo (the first run links `@alat_demo`, about 20 seconds).
 - In Telegram, send `/start` to the bot. On its first request the function
   points the bot's webhook at `https://<your-url>/api/tg/<secret>` by itself.
 
