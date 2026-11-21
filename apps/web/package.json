@@ -1,0 +1,32 @@
+{
+  "name": "@alat/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Alat site: link, respond, judge and status pages, with QoreX on the QoreChain native lane.",
+  "scripts": {
+    "dev": "vite",
+    "e2e": "playwright test --trace off",
+    "e2e:live": "ALAT_LIVE=1 playwright test --trace off flow.live judge.live",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@alat/core": "workspace:*",
+    "@qorechain/evm": "^0.14.0",
+    "@qorechain/qorex-types": "0.1.0",
+    "cosmjs-types": "0.10.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@qorechain/qorex-wallet-mock": "0.1.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.0"
+  }
+}

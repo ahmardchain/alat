@@ -1,0 +1,15 @@
+# Closes checks whose 15 minutes ran out (they turn ❌ in the friend's chat).
+# The Vercel Hobby plan runs cron jobs at most once a day, so this runs here.
+# The endpoint is public and idempotent: it only closes checks already past expiry.
+name: expire checks
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS -X POST "${ALAT_URL:-https://alat-silk.vercel.app}/api/cron/expire"
+        env:
+          ALAT_URL: ${{ vars.ALAT_URL }}

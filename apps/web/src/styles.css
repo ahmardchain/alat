@@ -1,0 +1,104 @@
+/* Alat: ink on paper. Colour appears only when it reports a verdict. */
+:root {
+  --ink: #16181d;
+  --paper: #f5f2ea;
+  --card: #fbf9f4;
+  --line: #d9d4c7;
+  --muted: #6b6a64;
+  --go: #1e8e4e;
+  --stop: #c8372d;
+  --wait: #b07c12;
+  --radius: 16px;
+  --sans: "Instrument Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #f1eee6;
+    --paper: #111216;
+    --card: #17191e;
+    --line: #2c2e34;
+    --muted: #a19f97;
+    --go: #3cb371;
+    --stop: #e5594e;
+    --wait: #e0a93a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #f1eee6;
+  --paper: #111216;
+  --card: #17191e;
+  --line: #2c2e34;
+  --muted: #a19f97;
+  --go: #3cb371;
+  --stop: #e5594e;
+  --wait: #e0a93a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background-color: var(--paper);
+  /* the lattice: ML-DSA-87 is lattice-based cryptography */
+  background-image: radial-gradient(var(--line) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font: 400 16px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-underline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; word-break: break-all; }
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+header.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; }
+nav.links { display: flex; gap: 16px; font-size: 15px; color: var(--muted); }
+nav.links a { text-decoration: none; }
+nav.links a:hover { color: var(--ink); }
+
+h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.08; letter-spacing: -0.025em; margin: 40px 0 16px; font-weight: 600; }
+h2 { font-size: 22px; letter-spacing: -0.01em; margin: 0 0 8px; font-weight: 600; }
+.lede { font-size: 19px; color: var(--muted); max-width: 40em; margin: 0 0 28px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 0 0 16px; }
+.card.verdict { border-left-width: 6px; }
+.card.go { border-left-color: var(--go); }
+.card.stop { border-left-color: var(--stop); }
+.card.wait { border-left-color: var(--wait); }
+
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 15px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; }
+
+button, .button {
+  font: 600 15px/1 var(--sans);
+  padding: 13px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button.secondary, .button.secondary { background: transparent; color: var(--ink); }
+button:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--wait); outline-offset: 2px; }
+
+.badge { font: 600 13px/1 var(--sans); padding: 6px 10px; border-radius: 999px; border: 1px solid currentColor; display: inline-flex; gap: 6px; align-items: center; }
+.badge.go { color: var(--go); }
+.badge.stop { color: var(--stop); }
+.badge.wait { color: var(--wait); }
+
+footer { padding: 40px 0; color: var(--muted); font-size: 14px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.45; } }
+}
