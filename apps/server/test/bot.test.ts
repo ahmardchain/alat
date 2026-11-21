@@ -11,6 +11,7 @@ import type { Update, UserFromGetMe } from "grammy/types";
 import { createBot, TelegramNotifier } from "../src/bot.ts";
 import { Alat } from "../src/service.ts";
 import { FakeChain, memDb } from "./fakes.ts";
+import { Demo } from "../src/demo.ts";
 
 const SALT = "bot-test-salt-bot-test-salt-bot-test-salt";
 const OWNER = "qor1md44fjsld8rjzx2r2hhyquw2wldm60a2dqlalk";
@@ -40,6 +41,22 @@ let bot: Bot;
 let calls: Call[];
 let nextMessageId: number;
 let updateId = 1;
+let demo: Demo;
+const DEMO_KEY = "qor1zrmp2jdwfq8kdv4u7ug5n7xvqnl8lpnl7s3etz";
+
+function tap(from: typeof ALICE, data: string, messageId = 500): Update {
+  return {
+    update_id: updateId++,
+    callback_query: {
+      id: String(updateId),
+      from,
+      chat_instance: "x",
+      data,
+      message: { message_id: messageId, date: 0, chat: { id: from.id, type: "private", first_name: from.first_name }, text: "…" },
+    },
+  } as unknown as Update;
+}
+const buttons = (c: Call) => JSON.stringify(c.payload.reply_markup ?? {});
 
 beforeEach(async () => {
   t = Date.parse("2026-11-19T12:00:00Z");
@@ -53,7 +70,16 @@ beforeEach(async () => {
     { checkChanged: (c, v) => holder.n!.checkChanged(c, v), toOwner: (a, b, u) => holder.n!.toOwner(a, b, u) },
     { salt: SALT, publicUrl: "https://alat.example", now: () => t, observeAttempts: 1, observeDelayMs: 0 },
   );
-  bot = createBot("1:test", alat, "https://alat.example");
+  demo = new Demo(alat, {
+    async sign(w, memo) {
+      return chain.sign(w === "demo" ? DEMO_KEY : OWNER, memo);
+    },
+    async demoAddress() {
+      return DEMO_KEY;
+    },
+  });
+  await demo.setup();
+  bot = createBot("1:test", alat, "https://alat.example", demo);
   bot.botInfo = botInfo;
   bot.api.config.use(async (_prev, method, payload) => {
     calls.push({ method, payload: payload as Record<string, unknown> });
@@ -105,7 +131,7 @@ describe("bot", () => {
     const waiting = last("sendMessage");
     assert.match(text(waiting), /⏳ <b>Waiting for the owner\.<\/b>/);
     assert.match(text(waiting), /Do not send money until this turns green/);
-    assert.match(text(waiting), /Link transaction: <code>[0-9A-F]{64}<\/code>/);
+    assert.match(text(waiting), /Link tx: <code>[0-9A-F]{64}<\/code>/);
 
     // The owner was told in their own chat, with the respond link.
     assert.ok(calls.some((c) => c.method === "sendMessage" && c.payload.chat_id === String(ALICE.id) && /checking a message/.test(text(c))));
@@ -149,5 +175,38 @@ describe("bot", () => {
     assert.match(text(last("sendMessage")), /NEW key was requested/);
     await bot.handleUpdate(message(FRIEND, "/check @alice_k"));
     assert.match(text(last("sendMessage")), /⚠️ Link change pending/);
+  });
+
+  it("/start shows a menu of buttons, and the menu buttons work", async () => {
+    await bot.handleUpdate(message(FRIEND, "/start"));
+    const m = buttons(last("sendMessage"));
+    for (const b of ["m:check", "m:link", "m:demo"]) assert.ok(m.includes(b), b);
+    await bot.handleUpdate(tap(FRIEND, "m:check"));
+    assert.match(text(last("sendMessage")), /Forward me the message/);
+    await bot.handleUpdate(tap(FRIEND, "m:link"));
+    assert.match(buttons(last("sendMessage")), /\/link\?t=[a-z0-9]{20}/);
+  });
+
+  it("typing @username on its own runs a check", async () => {
+    await linkAlice();
+    await bot.handleUpdate(message(FRIEND, "@alice_k"));
+    assert.match(text(last("sendMessage")), /⏳/);
+    assert.match(buttons(last("sendMessage")), /"r:[a-z0-9]{12}"/);
+  });
+
+  it("demo by buttons: the hacker's key is refused, then the owner says not me and the message turns ❌", async () => {
+    await bot.handleUpdate(tap(FRIEND, "m:demo"));
+    const msg = last("sendMessage");
+    assert.match(text(msg), /Demo · @alat_demo wrote/);
+    const id = /"d:([a-z0-9]{12}):f"/.exec(buttons(msg))![1]!;
+
+    await bot.handleUpdate(tap(FRIEND, `d:${id}:f`));
+    assert.match(text(last("sendMessage")), /🛑 <b>Refused\.<\/b> It was signed by a different key/);
+    assert.ok(!buttons(last("editMessageReplyMarkup")).includes(`d:${id}:f`), "the hacker button goes away");
+
+    await bot.handleUpdate(tap(FRIEND, `d:${id}:n`));
+    const edit = last("editMessageText");
+    assert.match(text(edit), /❌ <b>The owner says this is NOT them\.<\/b>/);
+    assert.match(buttons(edit), /m:demo/);
   });
 });

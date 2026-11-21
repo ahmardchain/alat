@@ -8,7 +8,7 @@
 import { createHash } from "node:crypto";
 import type { Hex32 } from "@alat/core";
 import { Bot, webhookCallback } from "grammy";
-import { createBot, TelegramNotifier } from "./bot.ts";
+import { COMMANDS, createBot, TelegramNotifier } from "./bot.ts";
 import { createApp } from "./http.ts";
 import { wire } from "./wire.ts";
 
@@ -80,9 +80,10 @@ export async function build(opts: { serveWeb: boolean }) {
           }),
           async setWebhook() {
             const s = webhookSecrets(cfg.botToken!);
+            await bot!.api.setMyCommands(COMMANDS);
             await bot!.api.setWebhook(`${cfg.publicUrl}/api/tg/${s.path}`, {
               secret_token: s.header,
-              allowed_updates: ["message"],
+              allowed_updates: ["message", "callback_query"],
               drop_pending_updates: false,
             });
             return bot!.api.getWebhookInfo();
@@ -106,7 +107,8 @@ export async function build(opts: { serveWeb: boolean }) {
   if (tg && opts.serveWeb === false && cfg.publicUrl.startsWith("https://")) {
     const want = `${cfg.publicUrl}/api/tg/${tg.path}`;
     const current = await within(bot!.api.getWebhookInfo(), 8_000, "telegram getWebhookInfo");
-    if (current && current.url !== want) {
+    // Re-register when the URL changed, or when Telegram isn't yet sending button taps (callback queries).
+    if (current && (current.url !== want || !(current.allowed_updates ?? []).includes("callback_query"))) {
       const set = await within(tg.setWebhook(), 8_000, "telegram setWebhook");
       console.log(`telegram webhook ${set ? "set" : "NOT set"}: ${want.replace(tg.path, "<secret>")}`);
     }

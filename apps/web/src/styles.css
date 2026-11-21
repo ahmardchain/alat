@@ -168,3 +168,29 @@ h3 { font-size: 18px; margin: 0 0 6px; font-weight: 600; }
 /* ---------- get started ---------- */
 .guide ol { padding-left: 20px; margin: 8px 0 0; } .guide li { margin: 8px 0; }
 @media (max-width: 520px) { .hide-phone { display: none; } nav.links { gap: 10px; font-size: 13px; } }
+
+/* ---------- workflow animation ---------- */
+.wf-progress { height: 3px; background: var(--line); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+.wf-progress span { display: block; height: 100%; background: var(--ink); transition: width .5s ease; }
+.wf-row.hidden { opacity: 0.12; }
+.wf-row.hidden .wf-arrow { transform: scaleX(0); }
+.wf-row.hidden .wf-dot { transform: scale(0); }
+.wf-row { transition: opacity .5s ease; }
+.wf-arrow { transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+.wf-arrow.right { transform-origin: left center; }
+.wf-arrow.left { transform-origin: right center; }
+.wf-dot { transition: transform .4s ease; }
+.wf-row.active .wf-text { animation: wf-in .5s ease .45s both; }
+.wf-row.active .wf-dot { animation: wf-pulse 1.2s ease-in-out .2s 2; }
+.wf-packet { position: absolute; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: inherit; box-shadow: 0 0 0 3px var(--card); opacity: 0; }
+.wf-row.active .wf-arrow.right .wf-packet { animation: wf-run-right .9s ease-in-out .55s both; }
+.wf-row.active .wf-arrow.left .wf-packet { animation: wf-run-left .9s ease-in-out .55s both; }
+@keyframes wf-run-right { 0% { left: 0; opacity: 1; } 90% { opacity: 1; } 100% { left: calc(100% - 10px); opacity: 0; } }
+@keyframes wf-run-left { 0% { right: 0; opacity: 1; } 90% { opacity: 1; } 100% { right: calc(100% - 10px); opacity: 0; } }
+@keyframes wf-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes wf-pulse { 50% { transform: scale(1.5); } }
+.wf-row.active .wf-text { font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .wf-row, .wf-arrow, .wf-dot, .wf-progress span { transition: none !important; animation: none !important; }
+  .wf-packet { display: none; }
+}

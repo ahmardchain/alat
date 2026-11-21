@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Who does what, where. A sequence diagram with four lanes; each step is an
@@ -68,13 +68,16 @@ const FLOWS: { id: string; label: string; intro: string; steps: Step[] }[] = [
   },
 ];
 
-function Arrow({ s }: { s: Step }) {
+const STEP_MS = 1400; // one arrow draws, the packet travels, the text fades in
+const PAUSE_MS = 2600; // after the last step of a part, before the next part
+
+function Arrow({ s, state }: { s: Step; state: "hidden" | "active" | "done" }) {
   const a = Math.min(s.from, s.to);
   const b = Math.max(s.from, s.to);
   const self = s.from === s.to;
   const right = s.to > s.from;
   return (
-    <div className={`wf-row tone-${s.tone ?? "plain"}`}>
+    <div className={`wf-row tone-${s.tone ?? "plain"} ${state}`}>
       <div className="wf-track">
         {LANES.map((_, i) => (
           <span key={i} className="wf-life" style={{ gridColumn: i + 1 }} />
@@ -86,13 +89,13 @@ function Arrow({ s }: { s: Step }) {
             className={`wf-arrow ${right ? "right" : "left"}`}
             style={{ gridColumn: `${a + 1} / ${b + 2}`, ["--half" as string]: `${100 / (2 * (b - a + 1))}%` }}
             aria-hidden="true"
-          />
+          >
+            <span className="wf-packet" />
+          </span>
         )}
       </div>
       <p className="wf-text">
-        <span className="wf-who">
-          {self ? LANES[s.from] : `${LANES[s.from]} → ${LANES[s.to]}`}
-        </span>
+        <span className="wf-who">{self ? LANES[s.from] : `${LANES[s.from]} → ${LANES[s.to]}`}</span>
         {s.text}
         {s.detail && <span className="wf-detail">{s.detail}</span>}
       </p>
@@ -100,24 +103,55 @@ function Arrow({ s }: { s: Step }) {
   );
 }
 
+const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 export function Workflow() {
   const [i, setI] = useState(0);
+  const [shown, setShown] = useState(reducedMotion() ? 99 : 0); // how many steps are visible
+  const [auto, setAuto] = useState(!reducedMotion()); // move on to the next part by itself
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLElement>(null);
   const f = FLOWS[i]!;
+  const done = shown >= f.steps.length;
+
+  // Start playing only once the diagram is on screen.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return setVisible(true);
+    const io = new IntersectionObserver(([e]) => e?.isIntersecting && setVisible(true), { threshold: 0.3 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible || reducedMotion()) return;
+    if (!done) {
+      const t = setTimeout(() => setShown((n) => n + 1), shown === 0 ? 300 : STEP_MS);
+      return () => clearTimeout(t);
+    }
+    if (auto) {
+      const t = setTimeout(() => go((i + 1) % FLOWS.length, true), PAUSE_MS);
+      return () => clearTimeout(t);
+    }
+  }, [visible, shown, done, auto, i]);
+
+  function go(n: number, keepAuto = false) {
+    setI(n);
+    setShown(reducedMotion() ? 99 : 0);
+    if (!keepAuto) setAuto(false);
+  }
+
   return (
-    <section className="card wf" aria-label="How Alat works, step by step">
+    <section ref={ref} className="card wf" aria-label="How Alat works, step by step">
       <div className="wf-tabs" role="tablist">
         {FLOWS.map((x, n) => (
-          <button
-            key={x.id}
-            role="tab"
-            aria-selected={n === i}
-            className={n === i ? "" : "secondary"}
-            onClick={() => setI(n)}
-            type="button"
-          >
+          <button key={x.id} role="tab" aria-selected={n === i} className={n === i ? "" : "secondary"} onClick={() => go(n)} type="button">
             {x.label}
           </button>
         ))}
+      </div>
+      <div className="wf-progress" aria-hidden="true">
+        <span style={{ width: `${(Math.min(shown, f.steps.length) / f.steps.length) * 100}%` }} />
       </div>
       <p className="muted" style={{ margin: "14px 0 18px" }}>
         {f.intro}
@@ -128,14 +162,19 @@ export function Workflow() {
         ))}
       </div>
       {f.steps.map((s, n) => (
-        <Arrow key={`${f.id}-${n}`} s={s} />
+        <Arrow key={`${f.id}-${n}`} s={s} state={n < shown - 1 ? "done" : n === shown - 1 ? "active" : "hidden"} />
       ))}
       <div className="row" style={{ marginTop: 16, justifyContent: "space-between" }}>
-        <button type="button" className="secondary" disabled={i === 0} onClick={() => setI(i - 1)}>
-          ← Back
-        </button>
+        <div className="row">
+          <button type="button" className="secondary" disabled={i === 0} onClick={() => go(i - 1)}>
+            ← Back
+          </button>
+          <button type="button" className="secondary" onClick={() => go(i, auto)}>
+            ↻ Replay
+          </button>
+        </div>
         {i < FLOWS.length - 1 ? (
-          <button type="button" onClick={() => setI(i + 1)}>
+          <button type="button" onClick={() => go(i + 1)}>
             Next: {FLOWS[i + 1]!.label.replace(/^\d\. /, "")} →
           </button>
         ) : (
