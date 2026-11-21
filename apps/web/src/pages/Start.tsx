@@ -29,11 +29,11 @@ export function Start() {
             <b>Forward</b> the message that asks for money to the bot. Or send <code>/check @their_username</code>.
           </li>
           <li>
-            The bot answers <b>⏳ Waiting for the owner. Do not send money until this turns green.</b> Wait. The same message
+            The bot answers <b>Waiting for the owner. Do not send money until this turns green.</b> Wait. The same message
             changes when the owner answers with their key.
           </li>
           <li>
-            <b>✅ Confirmed by the real owner</b>: it's them. <b>❌</b>: don't send money, and tell them another way. If the
+            <b>Confirmed by the real owner</b> (green): it's them. <b>Not confirmed</b> (red): don't send money, and tell them another way. If the
             account hasn't set up Alat, call them on a number you already know.
           </li>
         </ol>

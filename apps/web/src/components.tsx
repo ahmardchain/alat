@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PENDING_CHANGE_WARNING, VERDICT } from "@alat/core/copy";
+import { IconWarn, VerdictIcon } from "./Icons.js";
 import { txJsonUrl, txUrl } from "./lib/chain.js";
 import { when, type CheckView, type PendingInfo } from "./lib/api.js";
 import { connectQorex, waitForQorex, type QorexState } from "./lib/qorex.js";
@@ -26,7 +27,9 @@ export function Tx({ hash, label }: { hash: string; label?: string }) {
 export function PendingBanner({ p }: { p: PendingInfo }) {
   return (
     <div className="card verdict wait" role="status">
-      <b>{PENDING_CHANGE_WARNING}</b>
+      <b className="iconline">
+        <IconWarn size={18} className="tone-wait-ink" /> {PENDING_CHANGE_WARNING.replace(/^\S+\s*/, "")}
+      </b>
       <p className="small" style={{ margin: "8px 0 0" }}>
         Requested {when(p.requestedAtMs)}. Takes effect {when(p.unlockAtMs)} unless the current key cancels it.
       </p>
@@ -57,7 +60,10 @@ export function Verdict({ v, who }: { v: CheckView; who?: string }) {
       {v.pending && <PendingBanner p={v.pending} />}
       <section className={`card verdict ${TONE[v.verdict]}`} data-testid="verdict" data-verdict={v.verdict}>
         <p style={{ fontSize: 28, lineHeight: 1.2, margin: "0 0 6px", fontWeight: 600 }}>
-          <span className={v.verdict === "waiting" ? "pulse" : ""}>{k.icon}</span> {k.title}
+          <span className={`iconline ${v.verdict === "waiting" ? "pulse" : ""}`}>
+            <VerdictIcon verdict={v.verdict} size={30} />
+          </span>{" "}
+          {k.title}
         </p>
         <p style={{ margin: "0 0 16px" }}>{k.body}</p>
         <dl className="kv">

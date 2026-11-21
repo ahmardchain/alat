@@ -54,7 +54,7 @@ const REFUSALS: [string, string, string][] = [
   ["A signature for one account used on another", "packages/core/test/verify.test.ts", "refuses a signature valid for one account used on another"],
   ["Re-link from Telegram alone, without the old key", "contracts/test/AlatRegistry.ts", "stays pending for 7 days and the old owner stays linked"],
   ["Every check during a pending re-link shows the warning", "apps/server/test/service.test.ts", "stays pending 7 days, is flagged on every check, and the old key can cancel it"],
-  ["An expired check answered late", "apps/server/test/service.test.ts", "keeps an expired challenge answered late at ❌"],
+  ["An expired check answered late", "apps/server/test/service.test.ts", "keeps an expired challenge answered late"],
   ["A transaction the chain did not verify as hybrid", "packages/core/test/observe.live.test.ts", "sees that a classical transaction carries no hybrid layer"],
   ["The same transaction used twice", "apps/server/test/service.test.ts", "refuses a replayed signature from an older challenge"],
 ];
@@ -224,8 +224,8 @@ export function Demo() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }} data-testid="stats">
         <Num n={stats?.registry.linkedAccounts} label="accounts linked (on chain)" />
         <Num n={stats && stats.real.checks + stats.demo.checks} label={`checks run (${stats?.demo.checks ?? "…"} demo)`} />
-        <Num n={stats && stats.real.confirmed + stats.demo.confirmed} label="✅ confirmed by the owner" />
-        <Num n={stats && stats.real.denied + stats.demo.denied + stats.real.expired + stats.demo.expired} label="❌ not me, or expired" />
+        <Num n={stats && stats.real.confirmed + stats.demo.confirmed} label="confirmed by the owner" />
+        <Num n={stats && stats.real.denied + stats.demo.denied + stats.real.expired + stats.demo.expired} label="not me, or expired" />
         <Num n={stats?.refused} label="transactions refused" />
         <Num n={stats?.transactions} label="testnet transactions sent or verified" />
       </div>

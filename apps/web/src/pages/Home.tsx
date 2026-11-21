@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IconClock, IconCross } from "../Icons.js";
 import { Mark } from "../Logo.js";
 import { Workflow } from "../Workflow.js";
 
@@ -27,12 +28,12 @@ function ChatIllustration() {
       <div className={`mini-verdict ${step >= 2 ? "show" : ""} ${step >= 3 ? "stop" : "wait"}`}>
         {step >= 3 ? (
           <>
-            <b>❌ The owner says this is NOT them.</b>
+            <b className="iconline"><IconCross size={18} /> The owner says this is NOT them.</b>
             <span>Don't send money. Answered with Maya's key, outside the chat.</span>
           </>
         ) : (
           <>
-            <b>⏳ Waiting for the owner.</b>
+            <b className="iconline"><IconClock size={18} /> Waiting for the owner.</b>
             <span>Do not send money until this turns green.</span>
           </>
         )}
