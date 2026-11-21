@@ -4,7 +4,7 @@
 
 Alat lets a friend check a money request with the sender's QoreChain key, held in QoreX, instead of trusting the chat account a hacker may have taken over.
 
-**Live site:** not deployed yet · **Telegram bot:** not deployed yet · **Demo:** `/demo` on the live site · **Demo video:** not published yet · **Hybrid-signed tx:** [`D17E9DDC…8162`](https://api-testnet.qore.host/cosmos/tx/v1beta1/txs/D17E9DDC1DAD4D8AEF248B6E1C3EC46C43076DF81A8705BB8D8476CC8B1D8162)
+**Live site:** [alat-silk.vercel.app](https://alat-silk.vercel.app) · **Telegram bot:** [@alatAppbot](https://t.me/alatAppbot) · **Demo:** [alat-silk.vercel.app/demo](https://alat-silk.vercel.app/demo) · **Demo video:** not published yet · **Hybrid-signed tx:** [`D17E9DDC…8162`](https://api-testnet.qore.host/cosmos/tx/v1beta1/txs/D17E9DDC1DAD4D8AEF248B6E1C3EC46C43076DF81A8705BB8D8476CC8B1D8162)
 
 ![Alat: a hacked account can copy your words, it can't copy your key](docs/featured.png)
 
@@ -18,12 +18,12 @@ Someone's Telegram gets hacked, and the hacker messages all their friends: *"I'm
 
 | Do this | You'll see |
 | --- | --- |
-| 1. Open `/demo` and press **Get the hacker's message** | A money request from `@alat_demo` and a ⏳ *Waiting for the owner* card |
+| 1. Open [alat-silk.vercel.app/demo](https://alat-silk.vercel.app/demo) and press **Get the hacker's message** | A money request from `@alat_demo` and a ⏳ *Waiting for the owner* card |
 | 2. Press **Answer "yes" with the hacker's key** | A real testnet transaction from a different registered key, **refused**: *signed by a different key than the one linked* |
 | 3. Press **No, that's not me** | The card turns ❌ *The owner says this is NOT them*, with the answer transaction |
 | 4. Press **A real request from the owner**, then **Yes, that's me** | ✅ *Confirmed by the real owner* |
 | 5. Read the proof numbers at the top and the **What Alat refuses** table | Counts read live from the registry contract; each refusal links its test |
-| 6. In Telegram (once the bot is live): send `/demo` to the bot | The same check in a chat, one message that changes from ⏳ to ❌ or ✅ |
+| 6. In Telegram: open [@alatAppbot](https://t.me/alatAppbot) and send `/demo` | The same check in a chat, one message that changes from ⏳ to ❌ or ✅ |
 
 No QoreX is needed for this: the demo account's key is held by the Alat server (the page says so), and every answer is still a real hybrid-signed testnet transaction checked by the same code as a real owner's. All steps were run on the testnet; see [docs/testnet-log.md](docs/testnet-log.md).
 
