@@ -5,7 +5,7 @@
  * - The relayer: the only account that writes AlatRegistry. It keeps an EVM
  *   authorisation window open (opened by a hybrid-signed native message) and
  *   runs one write at a time, because native and EVM transactions share its nonce.
- * - Native self-sends with a memo, for the demo owner on /judge.
+ * - Native self-sends with a memo, for the demo owner on /demo.
  */
 import { StargateClient } from "@cosmjs/stargate";
 import { bytes32ToTxHash, evmToQor, qorToEvm, txHashToBytes32, type Hex32 } from "@alat/core";
@@ -64,7 +64,7 @@ export class Chain {
   private relayerAccount?: UnifiedAccount;
   private demoAccount?: UnifiedAccount;
   private queue: Promise<unknown> = Promise.resolve();
-  /** Called for every transaction Alat sends, so /judge can count them. */
+  /** Called for every transaction Alat sends, so /demo can count them. */
   onTx: (kind: string, nativeTx: string | null, evmTx: string | null) => void = () => undefined;
   private readonly evmChain;
 

@@ -73,7 +73,7 @@ Listed because they show what the checks are for.
   PQC Key Status precompile), 16 rule tests and 3 live chain tests in
   `packages/core`, 22 service, bot and demo tests in `apps/server`, and
   Playwright tests in `apps/web`.
-- **On chain:** the live Playwright runs (`flow.live.spec.ts`, `judge.live.spec.ts`)
+- **On chain:** the live Playwright runs (`flow.live.spec.ts`, `demo.live.spec.ts`)
   drive the real site and server against the testnet with the official QoreX
   wallet mock, which signs for real. They cover link, "not me", a different key
   being refused, "yes", a hacker re-link held for 7 days, and its cancellation.
@@ -81,7 +81,7 @@ Listed because they show what the checks are for.
   the server requires the chain's `pqc_hybrid_verify: verified` event **and**
   re-verifies the ML-DSA-87 layer against the key registered on chain, with
   QoreSign. A live test shows a classical-only transaction failing both.
-- **Nothing a judge sees is hard-coded:** the counters on `/judge` are read from
+- **Nothing a judge sees is hard-coded:** the counters on `/demo` are read from
   the registry contract and the server's records at request time, and every
   verdict links its transaction.
 

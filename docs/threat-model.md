@@ -58,4 +58,4 @@ It does not judge whether the request is a good idea, and it does not move money
   both fall together. The bot tells owners to keep the key elsewhere.
 - A hacker can keep asking for re-links after each cancel. Each one is public,
   flagged and cancellable, but the owner has to act every time.
-- The demo account's key is held by the server, by design and stated on /judge.
+- The demo account's key is held by the server, by design and stated on /demo.

@@ -276,7 +276,7 @@ export class Db {
 
   // --------------------------------------------------------------- stats
 
-  /** Live counts for /judge. Demo checks are counted apart from real ones. */
+  /** Live counts for /demo. Demo checks are counted apart from real ones. */
   async stats() {
     const count = async (demo: boolean) =>
       Object.fromEntries(

@@ -61,7 +61,7 @@ const REFUSALS: [string, string, string][] = [
 
 type Step = { id: string; scenario: "hacker" | "real"; text: string };
 
-export function Judge() {
+export function Demo() {
   const info = useLive(() => api.info() as Promise<Info & { github: string; bot: string | null; video: string | null; firstHybridTx: string; demoUsername: string }>, 60_000);
   const stats = useLive(() => fetch("/api/stats").then((r) => r.json() as Promise<Stats>), 5000);
   const [step, setStep] = useState<Step>();
@@ -70,7 +70,7 @@ export function Judge() {
   const [forged, setForged] = useState<{ reason: string; message: string; tx: string }>();
   const [error, setError] = useState<string>();
 
-  // Opened from the bot (/demo): ?c=<check id>
+  // Opened from the bot (/demo in Telegram): ?c=<check id>
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("c");
     if (c && /^[a-z0-9]{12}$/.test(c)) setStep({ id: c, scenario: "hacker", text: "" });
@@ -119,38 +119,19 @@ export function Judge() {
 
   return (
     <>
-      <h1>
-        A hacked account can copy your words. <br />
-        It can't copy your key.
-      </h1>
+      <h1>Watch Alat catch a hacker</h1>
       <p className="lede">
-        Alat lets a friend check a money request with the sender's QoreChain key, held in QoreX, not with the chat
-        account a hacker took over. Built for Build Before Q-Day, Quantum Pass.
+        A hacked account asks you for money. Only the owner's QoreChain key can confirm it. Two minutes, no wallet
+        needed, every step a real testnet transaction.
       </p>
 
-      <h2>Proof, read live</h2>
       <p className="small muted">
-        From AlatRegistry on the testnet and Alat's own records{stats ? `, read ${when(Date.parse(stats.readAt))}` : ""}. Demo checks are counted
-        apart.
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }} data-testid="stats">
-        <Num n={stats?.registry.linkedAccounts} label="accounts linked (on chain)" />
-        <Num n={stats && stats.real.checks + stats.demo.checks} label={`checks run (${stats?.demo.checks ?? "…"} demo)`} />
-        <Num n={stats && stats.real.confirmed + stats.demo.confirmed} label="✅ confirmed by the owner" />
-        <Num n={stats && stats.real.denied + stats.demo.denied + stats.real.expired + stats.demo.expired} label="❌ not me, or expired" />
-        <Num n={stats?.refused} label="transactions refused" />
-        <Num n={stats?.transactions} label="testnet transactions sent or verified" />
-      </div>
-
-      <h2 style={{ marginTop: 40 }}>Try it in 3 minutes, no setup</h2>
-      <p className="muted">
-        <b>@{info?.demoUsername ?? "alat_demo"}</b> is a demo chat account, already linked to a QoreChain key. For this demo the Alat
-        server holds that key, so you don't need QoreX. Every answer below is still a real hybrid-signed (secp256k1 + ML-DSA-87)
-        testnet transaction, checked by the same code as a real owner's answer.
+        @alat_demo is a demo chat account linked to a key the Alat server holds for this demo. Answers are still hybrid-signed
+        (secp256k1 + ML-DSA-87) and checked like any owner's.
         {info?.bot && (
           <>
             {" "}
-            To watch it in Telegram instead, open <a href={`${info.bot}?start=demo`}>the bot</a> and send /demo.
+            Prefer Telegram? Open <a href={`${info.bot}?start=demo`}>the bot</a> and send /demo.
           </>
         )}
       </p>
@@ -234,6 +215,20 @@ export function Judge() {
         </>
       )}
       <ErrorCard error={error} />
+
+      <h2 style={{ marginTop: 40 }}>Live on the testnet</h2>
+      <p className="small muted">
+        From AlatRegistry on the testnet and Alat's own records{stats ? `, read ${when(Date.parse(stats.readAt))}` : ""}. Demo checks are counted
+        apart.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }} data-testid="stats">
+        <Num n={stats?.registry.linkedAccounts} label="accounts linked (on chain)" />
+        <Num n={stats && stats.real.checks + stats.demo.checks} label={`checks run (${stats?.demo.checks ?? "…"} demo)`} />
+        <Num n={stats && stats.real.confirmed + stats.demo.confirmed} label="✅ confirmed by the owner" />
+        <Num n={stats && stats.real.denied + stats.demo.denied + stats.real.expired + stats.demo.expired} label="❌ not me, or expired" />
+        <Num n={stats?.refused} label="transactions refused" />
+        <Num n={stats?.transactions} label="testnet transactions sent or verified" />
+      </div>
 
       <h2 style={{ marginTop: 40 }}>Links</h2>
       <section className="card">

@@ -67,7 +67,7 @@ const ROWS: Row[] = [
     open: "Not running on real Telegram yet: needs a bot token and hosting.",
   },
   {
-    feature: "Judge demo on /judge (no QoreX needed)",
+    feature: "Demo on /demo (no wallet needed)",
     since: "20 Nov 2026",
     evidence: [["demo tests", `${REPO}/apps/server/test/demo.test.ts`]],
     open: "The server holds the demo owner's key, by design, and says so on the page.",

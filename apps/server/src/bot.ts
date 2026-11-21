@@ -63,7 +63,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
     await next();
   });
 
-  // Judges: t.me/<bot>?start=demo, or /demo. Runs a check on the pre-linked demo account;
+  // Anyone: t.me/<bot>?start=demo, or /demo. Runs a check on the pre-linked demo account;
   // the demo owner's answer is given on the site, and this message changes in place.
   async function runDemo(ctx: Context) {
     if (!demo) return ctx.reply("The demo is not configured on this server.");
@@ -75,7 +75,7 @@ export function createBot(token: string, alat: Alat, publicUrl: string, demo?: D
     );
     await alat.db.setFriendMessage(r.check.id, String(ctx.chat!.id), sent.message_id);
     await ctx.reply("Now play the owner. Answer with the demo key, and watch the message above change:", {
-      reply_markup: new InlineKeyboard().url("Answer as the owner", `${publicUrl}/judge?c=${r.check.id}`),
+      reply_markup: new InlineKeyboard().url("Answer as the owner", `${publicUrl}/demo?c=${r.check.id}`),
     });
   }
 
