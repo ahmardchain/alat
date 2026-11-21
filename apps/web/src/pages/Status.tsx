@@ -64,7 +64,7 @@ const ROWS: Row[] = [
     feature: "Telegram bot: /link, /check, forwarded messages, /demo",
     since: "20 Nov 2026 (tests)",
     evidence: [["bot tests", `${REPO}/apps/server/test/bot.test.ts`]],
-    open: "Not running on real Telegram yet: needs a bot token and hosting.",
+    open: "Live as @alatAppbot by webhook since 21 Nov 2026. Covered by tests with simulated updates; a full run in real Telegram chats is still to record.",
   },
   {
     feature: "Demo on /demo (no wallet needed)",
@@ -74,9 +74,9 @@ const ROWS: Row[] = [
   },
   {
     feature: "Public hosting with a stable URL",
-    since: "—",
-    evidence: [],
-    open: "Not deployed yet.",
+    since: "21 Nov 2026",
+    evidence: [["alat-silk.vercel.app", "https://alat-silk.vercel.app/demo"]],
+    open: "Vercel (Hobby) + Neon Postgres. Checks expire every 5 minutes via a GitHub Action, and on every request.",
   },
   {
     feature: "WhatsApp, Instagram, family groups",
@@ -126,7 +126,7 @@ export function Status() {
           </tbody>
         </table>
       </section>
-      <p className="small muted">Last updated 20 Nov 2026. All addresses and hashes: docs/testnet-log.md.</p>
+      <p className="small muted">Last updated 21 Nov 2026. All addresses and hashes: docs/testnet-log.md.</p>
     </>
   );
 }
