@@ -53,7 +53,12 @@ export class TelegramNotifier implements Notifier {
 }
 
 export function createBot(token: string, alat: Alat, publicUrl: string, demo?: Demo): Bot {
-  const bot = new Bot(token);
+  // Node's built-in fetch, no keep-alive agent, and a short limit: on Vercel a
+  // reused keep-alive socket can stall, and grammY's default limit (500 s) is
+  // longer than the function's 300 s, which hung every request.
+  const bot = new Bot(token, {
+    client: { fetch: globalThis.fetch as never, baseFetchConfig: {}, timeoutSeconds: 15 },
+  });
 
   // Every update refreshes the username → Telegram id map, so a renamed account
   // stays findable under its new name (the id, not the name, is what is linked).
